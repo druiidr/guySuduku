@@ -1,0 +1,15 @@
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\bin\Debug\net8.0\guy's suduku.exe
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\bin\Debug\net8.0\guy's suduku.deps.json
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\bin\Debug\net8.0\guy's suduku.runtimeconfig.json
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\bin\Debug\net8.0\guy's suduku.dll
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\bin\Debug\net8.0\guy's suduku.pdb
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.AssemblyInfoInputs.cache
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.AssemblyInfo.cs
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.csproj.CoreCompileInputs.cache
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.sourcelink.json
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.dll
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\refint\guy's suduku.dll
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.pdb
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.genruntimeconfig.cache
+C:\Users\gguyl\Source\Repos\guySuduku\guy's suduku\obj\Debug\net8.0\ref\guy's suduku.dll

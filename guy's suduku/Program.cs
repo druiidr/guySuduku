@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace guy_s_suduku
+namespace guy_s_sudoku
 {
-    class program
+    class Program
     {
         public static void Main(string[] args)
         {
@@ -14,13 +12,11 @@ namespace guy_s_suduku
             try
             {
                 input = Console.ReadLine();
-
                 if (input.Length != 81 || !input.All(c => char.IsDigit(c)))
                 {
                     Console.WriteLine("Invalid input. Ensure it is exactly 81 digits long and contains only numbers.");
                     return;
                 }
-
                 Board board = new Board(input);
                 start = DateTime.Now;
                 if (board.Solve())
@@ -32,8 +28,8 @@ namespace guy_s_suduku
                 {
                     Console.WriteLine("No solution exists.");
                 }
-                end= DateTime.Now;
-                Console.WriteLine("it took me {0} seconds to determine my answer", (double)((end-start).Milliseconds)/1000);
+                end = DateTime.Now;
+                Console.WriteLine("It took me {0} seconds to determine my answer", (double)((end - start).Milliseconds) / 1000);
             }
             catch (Exception e)
             {
