@@ -5,10 +5,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace guy_s_suduku
+namespace guy_s_sudoku
 {
     class Constants
     {
-       public static int SQUARE_PARAMS = 9;
+       public static int SQUARE_PARAMS = 0;
     }
 }

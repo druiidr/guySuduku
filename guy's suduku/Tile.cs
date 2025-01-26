@@ -9,8 +9,8 @@ namespace guy_s_sudoku
         public HashSet<int> PossibleValues { get; set; }
         public Tile()
         {
-            Value = 0;
-            PossibleValues = new HashSet<int>(Enumerable.Range(1, 9));
+            Value = '0';
+            PossibleValues = new HashSet<int>(Enumerable.Range(49, Constants.SQUARE_PARAMS)); // ASCII values from '1' to the character corresponding to the board size
         }
     }
 }

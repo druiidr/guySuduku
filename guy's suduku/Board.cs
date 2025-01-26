@@ -7,19 +7,21 @@ namespace guy_s_sudoku
     internal class Board
     {
         private Tile[,] Tiles;
+        private int Size;
 
-        public Board(string input)
+        public Board(string input, int size)
         {
-            Tiles = new Tile[9, 9];
+            Size = size;
+            Tiles = new Tile[Size, Size];
             int index = 0;
-            for (int row = 0; row < 9; row++)
+            for (int row = 0; row < Size; row++)
             {
-                for (int col = 0; col < 9; col++)
+                for (int col = 0; col < Size; col++)
                 {
                     Tiles[row, col] = new Tile();
                     if (char.IsDigit(input[index]) && input[index] != '0')
                     {
-                        Tiles[row, col].Value = input[index] - '0';
+                        Tiles[row, col].Value = input[index];
                         Tiles[row, col].PossibleValues.Clear();
                     }
                     index++;
@@ -34,11 +36,11 @@ namespace guy_s_sudoku
         public bool Solve()
         {
             var emptyCells = new List<Tuple<int, int>>();
-            for (int row = 0; row < 9; row++)
+            for (int row = 0; row < Size; row++)
             {
-                for (int col = 0; col < 9; col++)
+                for (int col = 0; col < Size; col++)
                 {
-                    if (Tiles[row, col].Value == 0)
+                    if (Tiles[row, col].Value == '0')
                     {
                         UpdatePossibleValues(row, col);
                         emptyCells.Add(Tuple.Create(row, col));
@@ -67,7 +69,7 @@ namespace guy_s_sudoku
                         return true;
                     }
                 }
-                Tiles[cell.Item1, cell.Item2].Value = 0;
+                Tiles[cell.Item1, cell.Item2].Value = '0';
             }
             return false;
         }
@@ -75,55 +77,57 @@ namespace guy_s_sudoku
         private void UpdatePossibleValues(int row, int col)
         {
             var usedValues = new HashSet<int>();
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < Size; i++)
             {
-                if (Tiles[row, i].Value != 0) usedValues.Add(Tiles[row, i].Value);
-                if (Tiles[i, col].Value != 0) usedValues.Add(Tiles[i, col].Value);
+                if (Tiles[row, i].Value != '0') usedValues.Add(Tiles[row, i].Value);
+                if (Tiles[i, col].Value != '0') usedValues.Add(Tiles[i, col].Value);
             }
-            int startRow = (row / 3) * 3;
-            int startCol = (col / 3) * 3;
-            for (int i = 0; i < 3; i++)
+            int blockSize = (int)Math.Sqrt(Size);
+            int startRow = (row / blockSize) * blockSize;
+            int startCol = (col / blockSize) * blockSize;
+            for (int i = 0; i < blockSize; i++)
             {
-                for (int j = 0; j < 3;j++)
+                for (int j = 0; j < blockSize; j++)
                 {
-                    if (Tiles[startRow + i, startCol + j].Value != 0)
+                    if (Tiles[startRow + i, startCol + j].Value != '0')
                     {
                         usedValues.Add(Tiles[startRow + i, startCol + j].Value);
                     }
                 }
             }
-            Tiles[row, col].PossibleValues = new HashSet<int>(Enumerable.Range(1, 9).Except(usedValues));
+            Tiles[row, col].PossibleValues = new HashSet<int>(Enumerable.Range(49, Size).Except(usedValues));
         }
 
         private bool IsValidInput()
         {
-            for (int row = 0; row < 9; row++)
+            for (int row = 0; row < Size; row++)
             {
                 var rowValues = new HashSet<int>();
                 var colValues = new HashSet<int>();
-                for (int col = 0; col < 9; col++)
+                for (int col = 0; col < Size; col++)
                 {
-                    if (Tiles[row, col].Value != 0)
+                    if (Tiles[row, col].Value != '0')
                     {
                         if (!rowValues.Add(Tiles[row, col].Value)) return false;
                     }
-                    if (Tiles[col, row].Value != 0)
+                    if (Tiles[col, row].Value != '0')
                     {
                         if (!colValues.Add(Tiles[col, row].Value)) return false;
                     }
                 }
             }
-            for (int startRow = 0; startRow < 9; startRow += 3)
+            int blockSize = (int)Math.Sqrt(Size);
+            for (int startRow = 0; startRow < Size; startRow += blockSize)
             {
-                for (int startCol = 0; startCol < 9; startCol += 3)
+                for (int startCol = 0; startCol < Size; startCol += blockSize)
                 {
                     var squareValues = new HashSet<int>();
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < blockSize; i++)
                     {
-                        for (int j = 0; j < 3; j++)
+                        for (int j = 0; j < blockSize; j++)
                         {
                             int value = Tiles[startRow + i, startCol + j].Value;
-                            if (value != 0)
+                            if (value != '0')
                             {
                                 if (!squareValues.Add(value)) return false;
                             }
@@ -136,39 +140,40 @@ namespace guy_s_sudoku
 
         private bool IsValid()
         {
-            for (int row = 0; row < 9; row++)
+            for (int row = 0; row < Size; row++)
             {
                 var rowValues = new HashSet<int>();
-                for (int col = 0; col < 9; col++)
+                for (int col = 0; col < Size; col++)
                 {
-                    if (Tiles[row, col].Value != 0 && !rowValues.Add(Tiles[row, col].Value))
+                    if (Tiles[row, col].Value != '0' && !rowValues.Add(Tiles[row, col].Value))
                     {
                         return false;
                     }
                 }
             }
-            for (int col = 0; col < 9; col++)
+            for (int col = 0; col < Size; col++)
             {
                 var colValues = new HashSet<int>();
-                for (int row = 0; row < 9; row++)
+                for (int row = 0; row < Size; row++)
                 {
-                    if (Tiles[row, col].Value != 0 && !colValues.Add(Tiles[row, col].Value))
+                    if (Tiles[row, col].Value != '0' && !colValues.Add(Tiles[row, col].Value))
                     {
                         return false;
                     }
                 }
             }
-            for (int startRow = 0; startRow < 9; startRow += 3)
+            int blockSize = (int)Math.Sqrt(Size);
+            for (int startRow = 0; startRow < Size; startRow += blockSize)
             {
-                for (int startCol = 0; startCol < 9; startCol += 3)
+                for (int startCol = 0; startCol < Size; startCol += blockSize)
                 {
                     var squareValues = new HashSet<int>();
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < blockSize; i++)
                     {
-                        for (int j = 0; j < 3; j++)
+                        for (int j = 0; j < blockSize; j++)
                         {
                             int value = Tiles[startRow + i, startCol + j].Value;
-                            if (value != 0 && !squareValues.Add(value))
+                            if (value != '0' && !squareValues.Add(value))
                             {
                                 return false;
                             }
@@ -181,11 +186,12 @@ namespace guy_s_sudoku
 
         public void PrintBoard()
         {
-            for (int row = 0; row < 9; row++)
+            for (int row = 0; row < Size; row++)
             {
-                for (int col = 0; col < 9; col++)
+                for (int col = 0; col < Size; col++)
                 {
-                    Console.Write(Tiles[row, col].Value + " ");
+                    char value = Tiles[row, col].Value != '0' ? (char)Tiles[row, col].Value : ' ';
+                    Console.Write($"{value} ");
                 }
                 Console.WriteLine();
             }

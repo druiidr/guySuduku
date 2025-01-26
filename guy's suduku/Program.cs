@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Linq;
 
 namespace guy_s_sudoku
 {
@@ -8,16 +10,38 @@ namespace guy_s_sudoku
         {
             DateTime start, end;
             string input;
-            Console.WriteLine("Enter the Sudoku puzzle as a single string (81 characters, use 0 for empty cells):");
+            int size = 0;
+            Console.WriteLine("Would you like to enter the Sudoku puzzle directly or provide a file path? (Enter 'direct' or 'file')");
+            string inputMethod = Console.ReadLine().ToLower();
+
             try
             {
-                input = Console.ReadLine();
-                if (input.Length != 81 || !input.All(c => char.IsDigit(c)))
+                if (inputMethod == "file")
                 {
-                    Console.WriteLine("Invalid input. Ensure it is exactly 81 digits long and contains only numbers.");
+                    Console.WriteLine("Enter the path to the Sudoku puzzle file:");
+                    string filePath = Console.ReadLine();
+                    input = File.ReadAllText(filePath).Trim();
+                }
+                else if (inputMethod == "direct")
+                {
+                    Console.WriteLine("Enter the Sudoku puzzle as a single string (length must be a perfect square, use 0 for empty cells):");
+                    input = Console.ReadLine().Trim();
+                }
+                else
+                {
+                    Console.WriteLine("Invalid input method. Please enter either 'direct' or 'file'.");
                     return;
                 }
-                Board board = new Board(input);
+
+                size = (int)Math.Sqrt(input.Length);
+                Constants.SQUARE_PARAMS = size;
+                if (input.Length != size * size || !input.All(c => (c == '0' || (c >= '1' && c <= (char)('0' + size)))))
+                {
+                    Console.WriteLine("Invalid input. Ensure it is a valid Sudoku puzzle with appropriate length and characters.");
+                    return;
+                }
+
+                Board board = new Board(input, size);
                 start = DateTime.Now;
                 if (board.Solve())
                 {
@@ -29,7 +53,7 @@ namespace guy_s_sudoku
                     Console.WriteLine("No solution exists.");
                 }
                 end = DateTime.Now;
-                Console.WriteLine("It took me {0} seconds to determine my answer", (double)((end - start).Milliseconds) / 1000);
+                Console.WriteLine("It took me {0} seconds to determine my answer", (end - start).TotalSeconds);
             }
             catch (Exception e)
             {
