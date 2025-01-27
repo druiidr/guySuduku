@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\gguyl\\Source\\Repos\\guySuduku\\guy's suduku\\guy's suduku.csproj": {}
+    "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy's suduku\\guy's suduku.csproj": {}
   },
   "projects": {
-    "C:\\Users\\gguyl\\Source\\Repos\\guySuduku\\guy's suduku\\guy's suduku.csproj": {
+    "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy's suduku\\guy's suduku.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\gguyl\\Source\\Repos\\guySuduku\\guy's suduku\\guy's suduku.csproj",
+        "projectUniqueName": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy's suduku\\guy's suduku.csproj",
         "projectName": "guy's suduku",
-        "projectPath": "C:\\Users\\gguyl\\Source\\Repos\\guySuduku\\guy's suduku\\guy's suduku.csproj",
+        "projectPath": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy's suduku\\guy's suduku.csproj",
         "packagesPath": "C:\\Users\\gguyl\\.nuget\\packages\\",
         "outputPath": "C:\\Users\\gguyl\\Source\\Repos\\guySuduku\\guy's suduku\\obj\\",
         "projectStyle": "PackageReference",
