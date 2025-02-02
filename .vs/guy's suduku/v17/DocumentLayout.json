@@ -1,26 +1,26 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\",
+  "WorkspaceRootPath": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\gguyl\\source\\repos\\guysuduku\\guy\u0027s suduku\\huristics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\asus\\source\\repos\\druiidr\\guysuduku\\guy\u0027s suduku\\huristics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|solutionrelative:guy\u0027s suduku\\huristics.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\gguyl\\source\\repos\\guysuduku\\guy\u0027s suduku\\board.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\asus\\source\\repos\\druiidr\\guysuduku\\guy\u0027s suduku\\board.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|solutionrelative:guy\u0027s suduku\\board.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\gguyl\\source\\repos\\guysuduku\\guy\u0027s suduku\\tile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\asus\\source\\repos\\druiidr\\guysuduku\\guy\u0027s suduku\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|solutionrelative:guy\u0027s suduku\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\asus\\source\\repos\\druiidr\\guysuduku\\guy\u0027s suduku\\tile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|solutionrelative:guy\u0027s suduku\\tile.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\gguyl\\source\\repos\\guysuduku\\guy\u0027s suduku\\constants.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\asus\\source\\repos\\druiidr\\guysuduku\\guy\u0027s suduku\\constants.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|solutionrelative:guy\u0027s suduku\\constants.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|c:\\users\\gguyl\\source\\repos\\guysuduku\\guy\u0027s suduku\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{98E129A3-5FF1-46E2-8B57-5EF6CCDD893E}|guy\u0027s suduku\\guy\u0027s suduku.csproj|solutionrelative:guy\u0027s suduku\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,13 +34,13 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 2,
               "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Program.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Program.cs",
               "RelativeDocumentMoniker": "guy\u0027s suduku\\Program.cs",
-              "ToolTip": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Program.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Program.cs",
               "RelativeToolTip": "guy\u0027s suduku\\Program.cs",
-              "ViewState": "AgIAABAAAAAAAAAAAAD4vyYAAAARAAAAAAAAAA==",
+              "ViewState": "AgIAAAcAAAAAAAAAAAAQwAgAAAAiAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-24T17:03:12.23Z",
               "EditorCaption": ""
@@ -49,11 +49,11 @@
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "Board.cs",
-              "DocumentMoniker": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Board.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Board.cs",
               "RelativeDocumentMoniker": "guy\u0027s suduku\\Board.cs",
-              "ToolTip": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Board.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Board.cs",
               "RelativeToolTip": "guy\u0027s suduku\\Board.cs",
-              "ViewState": "AgIAANIAAAAAAAAAAAAIwAIBAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAGEAAAAAAAAAAAAiwG8AAAA/AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-24T16:52:03.327Z",
               "EditorCaption": ""
@@ -62,40 +62,39 @@
               "$type": "Document",
               "DocumentIndex": 0,
               "Title": "Huristics.cs",
-              "DocumentMoniker": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Huristics.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Huristics.cs",
               "RelativeDocumentMoniker": "guy\u0027s suduku\\Huristics.cs",
-              "ToolTip": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Huristics.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Huristics.cs",
               "RelativeToolTip": "guy\u0027s suduku\\Huristics.cs",
-              "ViewState": "AgIAACoAAAAAAAAAAAAIwFoAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADkBAAAAAAAAAAAAAAMBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-27T11:27:19.245Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "Tile.cs",
-              "DocumentMoniker": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Tile.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Tile.cs",
               "RelativeDocumentMoniker": "guy\u0027s suduku\\Tile.cs",
-              "ToolTip": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Tile.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Tile.cs",
               "RelativeToolTip": "guy\u0027s suduku\\Tile.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABUAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-01-24T17:01:53.11Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Constants.cs",
-              "DocumentMoniker": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Constants.cs",
+              "DocumentMoniker": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Constants.cs",
               "RelativeDocumentMoniker": "guy\u0027s suduku\\Constants.cs",
-              "ToolTip": "C:\\Users\\gguyl\\source\\repos\\guySuduku\\guy\u0027s suduku\\Constants.cs",
+              "ToolTip": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy\u0027s suduku\\Constants.cs",
               "RelativeToolTip": "guy\u0027s suduku\\Constants.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-01-24T16:52:01.596Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-01-24T16:52:01.596Z"
             }
           ]
         }

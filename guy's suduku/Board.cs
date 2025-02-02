@@ -9,11 +9,13 @@ namespace guy_s_sudoku
         private Tile[,] Tiles;
         private int Size;
         private Heuristic heuristic;
+        private bool DebugMode;
 
-        public Board(string input, int size)
+        public Board(string input, int size, bool debugMode = false)
         {
             Size = size;
             Tiles = new Tile[Size, Size];
+            DebugMode = debugMode;
             InitializeBoard(input);
             if (!IsValidInput())
             {
@@ -38,123 +40,13 @@ namespace guy_s_sudoku
                     index++;
                 }
             }
-        }
 
-        public bool Solve()
-        {
-            heuristic.ApplyAll();
-            var emptyCells = GetEmptyCells();
-            return BacktrackSolve(emptyCells);
-        }
-
-        private List<Tuple<int, int>> GetEmptyCells()
-        {
-            var emptyCells = new List<Tuple<int, int>>();
-            for (int row = 0; row < Size; row++)
+            if (DebugMode)
             {
-                for (int col = 0; col < Size; col++)
-                {
-                    if (Tiles[row, col].Value == '0')
-                    {
-                        emptyCells.Add(Tuple.Create(row, col));
-                    }
-                }
-            }
-            return emptyCells.OrderBy(cell => CountSetBits(Tiles[cell.Item1, cell.Item2].PossibleValuesBitmask)).ToList();
-        }
-
-        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells)
-        {
-            if (!emptyCells.Any())
-            {
-                return true;
-            }
-            var cell = emptyCells.First();
-            var possibleValues = GetPossibleValues(cell.Item1, cell.Item2);
-
-            foreach (var value in possibleValues)
-            {
-                Tiles[cell.Item1, cell.Item2].Value = value;
-                long bitMask = 1L << (value - '0');
-                UpdateConstraints(cell.Item1, cell.Item2, bitMask, false);
-                if (IsValid())
-                {
-                    var remainingCells = emptyCells.Skip(1).ToList();
-                    remainingCells = remainingCells.OrderBy(c => CountSetBits(Tiles[c.Item1, c.Item2].PossibleValuesBitmask)).ToList();
-                    if (BacktrackSolve(remainingCells))
-                    {
-                        return true;
-                    }
-                }
-                Tiles[cell.Item1, cell.Item2].Value = '0';
-                UpdateConstraints(cell.Item1, cell.Item2, bitMask, true);
-            }
-            return false;
-        }
-
-        private void UpdateConstraints(int row, int col, long bitMask, bool add)
-        {
-            int blockSize = (int)Math.Sqrt(Size);
-            int startRow = (row / blockSize) * blockSize;
-            int startCol = (col / blockSize) * blockSize;
-
-            for (int i = 0; i < Size; i++)
-            {
-                if (Tiles[row, i].Value == '0')
-                {
-                    if (add)
-                        Tiles[row, i].PossibleValuesBitmask |= bitMask;
-                    else
-                        Tiles[row, i].PossibleValuesBitmask &= ~bitMask;
-                }
-                if (Tiles[i, col].Value == '0')
-                {
-                    if (add)
-                        Tiles[i, col].PossibleValuesBitmask |= bitMask;
-                    else
-                        Tiles[i, col].PossibleValuesBitmask &= ~bitMask;
-                }
-            }
-
-            for (int r = 0; r < blockSize; r++)
-            {
-                for (int c = 0; c < blockSize; c++)
-                {
-                    if (Tiles[startRow + r, startCol + c].Value == '0')
-                    {
-                        if (add)
-                            Tiles[startRow + r, startCol + c].PossibleValuesBitmask |= bitMask;
-                        else
-                            Tiles[startRow + r, startCol + c].PossibleValuesBitmask &= ~bitMask;
-                    }
-                }
+                LogState("Initial Board Setup:");
             }
         }
 
-        private List<char> GetPossibleValues(int row, int col)
-        {
-            List<char> possibleValues = new List<char>();
-            long bitMask = Tiles[row, col].PossibleValuesBitmask;
-            for (int i = 1; i <= Size; i++)
-            {
-                if ((bitMask & (1L << i)) != 0)
-                {
-                    possibleValues.Add((char)('0' + i));
-                }
-            }
-            return possibleValues;
-        }
-
-        private int CountSetBits(long bitMask)
-        {
-            int count = 0;
-            while (bitMask != 0)
-            {
-                count++;
-                bitMask &= (bitMask - 1);
-            }
-            return count;
-        }
 
         private bool IsValidInput()
         {
@@ -194,6 +86,162 @@ namespace guy_s_sudoku
                 }
             }
             return true;
+        }
+
+        public bool Solve()
+        {
+            bool progress;
+
+            if (DebugMode)
+            {
+                LogState("Initial Board Setup:");
+            }
+
+            do
+            {
+                progress = false;
+                progress |= heuristic.ApplyNakedSingles();
+                if (DebugMode && progress)
+                {
+                    LogState("After Applying Naked Singles:");
+                }
+
+                progress |= heuristic.ApplyHiddenSingles();
+                if (DebugMode && progress)
+                {
+                    LogState("After Applying Hidden Singles:");
+                }
+
+                progress |= heuristic.ApplyNakedSets();
+                if (DebugMode && progress)
+                {
+                    LogState("After Applying Naked Sets:");
+                }
+            } while (progress);
+
+            var emptyCells = GetEmptyCells();
+            return BacktrackSolve(emptyCells);
+        }
+
+
+        private List<Tuple<int, int>> GetEmptyCells()
+        {
+            var emptyCells = new List<Tuple<int, int>>();
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    if (Tiles[row, col].Value == '0')
+                    {
+                        emptyCells.Add(Tuple.Create(row, col));
+                    }
+                }
+            }
+            return emptyCells.OrderBy(cell => CountSetBits(Tiles[cell.Item1, cell.Item2].PossibleValuesBitmask)).ToList();
+        }
+
+        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells)
+        {
+            if (!emptyCells.Any())
+            {
+                return true;
+            }
+            var cell = emptyCells.First();
+            var possibleValues = GetPossibleValues(cell.Item1, cell.Item2);
+
+            foreach (var value in possibleValues)
+            {
+                Tiles[cell.Item1, cell.Item2].Value = value;
+                long bitMask = 1L << (value - '0');
+                UpdateConstraints(cell.Item1, cell.Item2, bitMask, false);
+
+             
+                if (IsValid())
+                {
+                    var remainingCells = emptyCells.Skip(1).ToList();
+                    remainingCells = remainingCells.OrderBy(c => CountSetBits(Tiles[c.Item1, c.Item2].PossibleValuesBitmask)).ToList();
+                    if (BacktrackSolve(remainingCells))
+                    {
+                        return true;
+                    }
+                }
+                Tiles[cell.Item1, cell.Item2].Value = '0';
+                UpdateConstraints(cell.Item1, cell.Item2, bitMask, true);
+
+            
+            }
+            return false;
+        }
+
+        private void UpdateConstraints(int row, int col, long bitMask, bool add)
+        {
+            int blockSize = (int)Math.Sqrt(Size);
+            int startRow = (row / blockSize) * blockSize;
+            int startCol = (col / blockSize) * blockSize;
+
+            // Update row constraints
+            for (int i = 0; i < Size; i++)
+            {
+                if (Tiles[row, i].Value == '0')
+                {
+                    if (add)
+                        Tiles[row, i].PossibleValuesBitmask |= bitMask;
+                    else
+                        Tiles[row, i].PossibleValuesBitmask &= ~bitMask;
+                }
+            }
+
+            // Update column constraints
+            for (int i = 0; i < Size; i++)
+            {
+                if (Tiles[i, col].Value == '0')
+                {
+                    if (add)
+                        Tiles[i, col].PossibleValuesBitmask |= bitMask;
+                    else
+                        Tiles[i, col].PossibleValuesBitmask &= ~bitMask;
+                }
+            }
+
+            // Update box constraints
+            for (int r = 0; r < blockSize; r++)
+            {
+                for (int c = 0; c < blockSize; c++)
+                {
+                    if (Tiles[startRow + r, startCol + c].Value == '0')
+                    {
+                        if (add)
+                            Tiles[startRow + r, startCol + c].PossibleValuesBitmask |= bitMask;
+                        else
+                            Tiles[startRow + r, startCol + c].PossibleValuesBitmask &= ~bitMask;
+                    }
+                }
+            }
+        }
+
+        private List<char> GetPossibleValues(int row, int col)
+        {
+            List<char> possibleValues = new List<char>();
+            long bitMask = Tiles[row, col].PossibleValuesBitmask;
+            for (int i = 1; i <= Size; i++)
+            {
+                if ((bitMask & (1L << i)) != 0)
+                {
+                    possibleValues.Add((char)('0' + i));
+                }
+            }
+            return possibleValues;
+        }
+
+        private int CountSetBits(long bitMask)
+        {
+            int count = 0;
+            while (bitMask != 0)
+            {
+                count++;
+                bitMask &= (bitMask - 1);
+            }
+            return count;
         }
 
         private bool IsValid()
@@ -241,6 +289,22 @@ namespace guy_s_sudoku
             }
             return true;
         }
+
+        private void LogState(string message)
+        {
+            Console.WriteLine(message);
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    char value = Tiles[row, col].Value != '0' ? Tiles[row, col].Value : ' ';
+                    Console.Write($"{value} ");
+                }
+                Console.WriteLine();
+            }
+            Console.WriteLine();
+        }
+
 
         public void PrintBoard()
         {
