@@ -13,10 +13,10 @@
 
         public bool IsSingleValue()
         {
-            return CountBits(PossibleValuesBitmask) == 1;
+            return CountSetBits(PossibleValuesBitmask) == 1;
         }
 
-        private int CountBits(long bitmask)
+        private int CountSetBits(long bitmask)
         {
             int count = 0;
             while (bitmask != 0)

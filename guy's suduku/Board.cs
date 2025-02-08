@@ -10,7 +10,7 @@ namespace guy_s_sudoku
         private int Size { get; }
         private int BlockSize { get; }
         private Heuristic Heuristic { get; }
-        private bool DebugMode { get; }
+        public bool DebugMode { get; }
 
         public Board(string input, int size, bool debugMode = false)
         {
@@ -46,7 +46,45 @@ namespace guy_s_sudoku
                 }
             }
 
+            // Ensure all possible values are correctly identified
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    if (Tiles[row, col].Value == '0')
+                    {
+                        UpdatePossibleValues(row, col);
+                    }
+                }
+            }
+
             if (DebugMode) LogState("Initial Board Setup:");
+        }
+
+        private void UpdatePossibleValues(int row, int col)
+        {
+            Tiles[row, col].PossibleValuesBitmask = (1L << (Size + 1)) - 2; // All bits set except for the 0th bit
+
+            for (int i = 0; i < Size; i++)
+            {
+                if (Tiles[row, i].Value != '0')
+                    Tiles[row, col].PossibleValuesBitmask &= ~(1L << (Tiles[row, i].Value - '0'));
+
+                if (Tiles[i, col].Value != '0')
+                    Tiles[row, col].PossibleValuesBitmask &= ~(1L << (Tiles[i, col].Value - '0'));
+            }
+
+            int startRow = (row / BlockSize) * BlockSize;
+            int startCol = (col / BlockSize) * BlockSize;
+
+            for (int r = 0; r < BlockSize; r++)
+            {
+                for (int c = 0; c < BlockSize; c++)
+                {
+                    if (Tiles[startRow + r, startCol + c].Value != '0')
+                        Tiles[row, col].PossibleValuesBitmask &= ~(1L << (Tiles[startRow + r, startCol + c].Value - '0'));
+                }
+            }
         }
 
         private bool IsValidInput()
@@ -71,59 +109,47 @@ namespace guy_s_sudoku
 
         public bool Solve()
         {
-            bool progress;
             var watch = System.Diagnostics.Stopwatch.StartNew();
-            long timeout = 1000;  // 10 seconds timeout for demonstration
+            const long timeout = 10000;  // 10 seconds timeout
 
-            if (DebugMode)
-            {
-                LogState("Initial Board Setup:");
-            }
+            bool progress;
+            int iteration = 0;
+            const int maxIterations = 1000;  // Limit the number of heuristic iterations
 
             do
             {
-                progress = false;
-                progress |= Heuristic.ApplyNakedSingles();
-                if (DebugMode && progress)
-                {
-                    LogState("After Applying Naked Singles:");
-                }
+                progress = Heuristic.ApplyAll();
+                if (DebugMode && progress) LogState($"After Applying Heuristics (Iteration {iteration}):");
 
-                progress |= Heuristic.ApplyHiddenSingles();
-                if (DebugMode && progress)
+                iteration++;
+                if (iteration >= maxIterations)
                 {
-                    LogState("After Applying Hidden Singles:");
-                }
-
-                // Apply complex heuristics only for larger puzzles
-                if (Size >= 16)
-                {
-                    progress |= Heuristic.ApplyNakedSets();
-                    if (DebugMode && progress)
-                    {
-                        LogState("After Applying Naked Sets:");
-                    }
-
-                    progress |= Heuristic.ApplySimplePairs();
-                    if (DebugMode && progress)
-                    {
-                        LogState("After Applying Simple Pairs:");
-                    }
+                    Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
+                    LogState("Final State before Exiting:");
+                    return false;
                 }
 
                 if (watch.ElapsedMilliseconds > timeout)
                 {
                     Console.WriteLine("Solver timed out.");
+                    LogState("Final State before Timeout:");
                     return false;
                 }
+            } while (progress && !IsSolved());
 
-            } while (progress);
-
-            LogState("Before Backtracking:");
-            var emptyCells = GetEmptyCells();
-            bool result = BacktrackSolve(emptyCells,0);
-            LogState(result ? "Solved Sudoku:" : "No solution exists.");
-            return result;
+            if (IsSolved())
+            {
+                LogState("Solved Sudoku:");
+                return true;
+            }
+            else
+            {
+                LogState("Before Backtracking:");
+                var emptyCells = GetEmptyCells();
+                bool result = BacktrackSolve(emptyCells, 0);
+                LogState(result ? "Solved Sudoku:" : "No solution exists.");
+                return result;
+            }
         }
 
 
@@ -157,15 +183,8 @@ namespace guy_s_sudoku
             return count;
         }
 
-        public bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
+        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
         {
-            const int maxDepth = 1000; // Adjust as needed
-            if (depth > maxDepth)
-            {
-                Console.WriteLine("Maximum recursion depth reached. Exiting to prevent infinite loop.");
-                return false;
-            }
-
             if (!emptyCells.Any()) return true;
 
             var cell = emptyCells.First();
@@ -176,19 +195,19 @@ namespace guy_s_sudoku
                 Tiles[cell.Item1, cell.Item2].Value = value;
                 UpdateConstraints(cell.Item1, cell.Item2, value, false);
 
-                
-
-                if (IsValid() && BacktrackSolve(emptyCells.Skip(1).ToList(), depth + 1))
-                    return true;
+                if (IsValid())
+                {
+                    var remainingCells = emptyCells.Skip(1).ToList();
+                    if (BacktrackSolve(remainingCells, depth + 1)) return true;
+                }
 
                 Tiles[cell.Item1, cell.Item2].Value = '0';
                 UpdateConstraints(cell.Item1, cell.Item2, value, true);
-
-              
             }
 
             return false;
         }
+
 
 
         public List<Tuple<int, int>> GetEmptyCells()
@@ -205,8 +224,7 @@ namespace guy_s_sudoku
             return emptyCells.OrderBy(cell => CountSetBits(Tiles[cell.Item1, cell.Item2].PossibleValuesBitmask)).ToList();
         }
 
-
-        private void UpdateConstraints(int row, int col, char value, bool add)
+        public void UpdateConstraints(int row, int col, char value, bool add)
         {
             long bitMask = 1L << (value - '0');
 
@@ -235,7 +253,7 @@ namespace guy_s_sudoku
         }
 
 
-        private List<char> GetPossibleValues(int row, int col)
+        public List<char> GetPossibleValues(int row, int col)
         {
             var possibleValues = new List<char>();
             long bitMask = Tiles[row, col].PossibleValuesBitmask;
@@ -249,7 +267,7 @@ namespace guy_s_sudoku
             return possibleValues;
         }
 
-        private bool IsValid()
+        public bool IsValid()
         {
             for (int i = 0; i < Size; i++)
             {
@@ -268,7 +286,6 @@ namespace guy_s_sudoku
 
             return true;
         }
-
 
         private bool HasDuplicate(Tile[,] tiles, int index, bool isRow)
         {
@@ -297,7 +314,7 @@ namespace guy_s_sudoku
             return false;
         }
 
-        private int CountSetBits(long bitMask)
+        public int CountSetBits(long bitMask)
         {
             int count = 0;
             while (bitMask != 0)
@@ -315,14 +332,13 @@ namespace guy_s_sudoku
             {
                 for (int col = 0; col < Size; col++)
                 {
-                    char value = Tiles[row, col].Value != '0' ? Tiles[row, col].Value : ' ';
-                    Console.Write($"{value} ");
+                    char value = Tiles[row, col].Value != '0' ? Tiles[row, col].Value : '.';
+                    Console.Write(value + " ");
                 }
                 Console.WriteLine();
             }
             Console.WriteLine();
         }
-
 
         public void PrintBoard()
         {
