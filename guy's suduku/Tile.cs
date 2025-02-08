@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace guy_s_sudoku
+﻿namespace guy_s_sudoku
 {
     internal class Tile
     {
@@ -10,12 +8,23 @@ namespace guy_s_sudoku
         public Tile()
         {
             Value = '0';
-            PossibleValuesBitmask = (1L << 31) - 2; // All values (1-30) possible initially
+            PossibleValuesBitmask = (1L << 10) - 2; // All bits set except the least significant bit (0 is not a possible value)
         }
 
         public bool IsSingleValue()
         {
-            return (PossibleValuesBitmask & (PossibleValuesBitmask - 1)) == 0;
+            return CountBits(PossibleValuesBitmask) == 1;
+        }
+
+        private int CountBits(long bitmask)
+        {
+            int count = 0;
+            while (bitmask != 0)
+            {
+                count++;
+                bitmask &= (bitmask - 1);
+            }
+            return count;
         }
     }
 }

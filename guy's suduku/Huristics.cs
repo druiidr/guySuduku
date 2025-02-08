@@ -1,31 +1,80 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace guy_s_sudoku
 {
     internal class Heuristic
     {
-        private Tile[,] Tiles;
-        private int Size;
+        private readonly Tile[,] Tiles;
+        private readonly int Size;
+        private readonly int BlockSize;
+        private readonly Board board; // Reference to Board class
 
-        public Heuristic(Tile[,] tiles, int size)
+        public Heuristic(Tile[,] tiles, int size, Board board)
         {
             Tiles = tiles;
             Size = size;
+            BlockSize = (int)Math.Sqrt(size);
+            this.board = board; // Initialize Board reference
         }
 
-        public void ApplyAll()
+        public bool ApplyAll()
         {
             bool progress;
+            int iterations = 0;
+            const int maxIterations = 1000; // Adjust as needed
+
             do
             {
-                progress = false;
-                progress |= ApplyNakedSingles();
-                progress |= ApplyHiddenSingles();
-                progress |= ApplyNakedSets();
-                progress |= ApplySimplePairs();
-            } while (progress);
+                progress = ApplyHeuristics();
+                iterations++;
+
+                if (iterations > maxIterations)
+                {
+                    Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
+                    break;
+                }
+
+            } while (progress && !board.IsSolved());
+
+            if (!board.IsSolved())
+            {
+                var emptyCells = board.GetEmptyCells();
+                if (!board.BacktrackSolve(emptyCells, 0))
+                {
+                    Console.WriteLine("No solution exists.");
+                    return false;
+                }
+            }
+
+            return true;
         }
 
+
+        private bool ApplyHeuristics()
+        {
+            bool progress = false;
+
+            // Start with simpler heuristics
+            progress = ApplyNakedSingles() || ApplyHiddenSingles();
+
+            // If simple heuristics don't progress much, use more advanced ones dynamically
+            if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
+            {
+                progress |= ApplyNakedSets() || ApplySimplePairs();
+            }
+
+            return progress;
+        }
+
+        private int GetAdaptiveThreshold()
+        {
+            // Set adaptive threshold based on board size
+            if (Size <= 4) return 5; // Smaller boards
+            if (Size <= 9) return 20; // Medium boards
+            return 30; // Larger boards
+        }
         public bool ApplyNakedSingles()
         {
             bool progress = false;
@@ -33,42 +82,50 @@ namespace guy_s_sudoku
             {
                 for (int col = 0; col < Size; col++)
                 {
-                    if (Tiles[row, col].Value == '0' && Tiles[row, col].IsSingleValue())
+                    var tile = Tiles[row, col];
+                    if (tile.Value == '0' && tile.IsSingleValue())
                     {
-                        Tiles[row, col].Value = (char)('0' + GetSingleValue(Tiles[row, col].PossibleValuesBitmask));
-                        UpdateConstraints(row, col);
-                        progress = true;
+                        char value = GetSingleValue(tile.PossibleValuesBitmask);
+                        if (IsValidMove(row, col, value))
+                        {
+                            tile.Value = value;
+                            UpdateConstraints(row, col);
+                            progress = true;
+                        }
                     }
                 }
             }
             return progress;
         }
 
+
+        private char GetSingleValue(long bitmask)
+        {
+            int value = (int)Math.Log2(bitmask);
+            return (char)('0' + value);
+        }
+
         public bool ApplyHiddenSingles()
         {
             bool progress = false;
-            int blockSize = (int)Math.Sqrt(Size);
             for (int num = 1; num <= Size; num++)
             {
                 long bitMask = 1L << num;
-
                 for (int i = 0; i < Size; i++)
                 {
-                    progress |= FindHiddenSingleInGroup(i, bitMask, true);  // Rows
-                    progress |= FindHiddenSingleInGroup(i, bitMask, false); // Columns
-                    progress |= FindHiddenSingleInBox(i, bitMask, blockSize); // Boxes
+                    progress |= FindHiddenSingle(i, bitMask, true) || FindHiddenSingle(i, bitMask, false);
                 }
             }
             return progress;
         }
 
-        private bool FindHiddenSingleInGroup(int index, long bitMask, bool isRow)
+
+        private bool FindHiddenSingle(int index, long bitMask, bool isRow)
         {
             int pos = -1, count = 0;
             for (int i = 0; i < Size; i++)
             {
-                int row = isRow ? index : i;
-                int col = isRow ? i : index;
+                int row = isRow ? index : i, col = isRow ? i : index;
                 if (Tiles[row, col].Value == '0' && (Tiles[row, col].PossibleValuesBitmask & bitMask) != 0)
                 {
                     pos = i;
@@ -77,102 +134,85 @@ namespace guy_s_sudoku
             }
             if (count == 1)
             {
-                int row = isRow ? index : pos;
-                int col = isRow ? pos : index;
-                Tiles[row, col].Value = (char)('0' + (int)Math.Log2(bitMask));
-                UpdateConstraints(row, col);
-                return true;
-            }
-            return false;
-        }
-
-        private bool FindHiddenSingleInBox(int boxIndex, long bitMask, int blockSize)
-        {
-            int startRow = (boxIndex / blockSize) * blockSize;
-            int startCol = (boxIndex % blockSize) * blockSize;
-            int posRow = -1, posCol = -1, count = 0;
-
-            for (int i = 0; i < blockSize; i++)
-            {
-                for (int j = 0; j < blockSize; j++)
+                int row = isRow ? index : pos, col = isRow ? pos : index;
+                char value = GetSingleValue(bitMask);
+                if (IsValidMove(row, col, value))
                 {
-                    int row = startRow + i, col = startCol + j;
-                    if (Tiles[row, col].Value == '0' && (Tiles[row, col].PossibleValuesBitmask & bitMask) != 0)
-                    {
-                        posRow = row;
-                        posCol = col;
-                        count++;
-                    }
+                    Tiles[row, col].Value = value;
+                    UpdateConstraints(row, col);
+                    return true;
                 }
             }
-            if (count == 1)
-            {
-                Tiles[posRow, posCol].Value = (char)('0' + (int)Math.Log2(bitMask));
-                UpdateConstraints(posRow, posCol);
-                return true;
-            }
             return false;
         }
+
 
         public bool ApplyNakedSets()
         {
             bool progress = false;
-            int blockSize = (int)Math.Sqrt(Size);
-
-            for (int setSize = 2; setSize <= blockSize; setSize++)
+            for (int setSize = 2; setSize <= BlockSize; setSize++)
             {
                 for (int i = 0; i < Size; i++)
                 {
-                    progress |= FindNakedSetsInGroup(i, setSize, true);
-                    progress |= FindNakedSetsInGroup(i, setSize, false);
-                    progress |= FindNakedSetsInBox(i, setSize, blockSize);
+                    progress |= EliminateNakedSets(FindNakedSets(i, setSize, true, false)) ||
+                                EliminateNakedSets(FindNakedSets(i, setSize, false, false)) ||
+                                EliminateNakedSets(FindNakedSets(i, setSize, false, true));
                 }
             }
             return progress;
         }
 
-        private bool FindNakedSetsInGroup(int index, int setSize, bool isRow)
+
+        private List<(int, int, long)> FindNakedSets(int index, int setSize, bool isRow, bool isBox)
         {
-            List<(int, long)> candidates = new();
-            for (int i = 0; i < Size; i++)
+            var nakedSets = new List<(int, int, long)>();
+
+            if (isBox)
             {
-                int row = isRow ? index : i;
-                int col = isRow ? i : index;
-                if (Tiles[row, col].Value == '0')
+                int startRow = (index / BlockSize) * BlockSize, startCol = (index % BlockSize) * BlockSize;
+                for (int i = 0; i < BlockSize; i++)
                 {
-                    long bitmask = Tiles[row, col].PossibleValuesBitmask;
-                    if (CountBits(bitmask) <= setSize)
+                    for (int j = 0; j < BlockSize; j++)
                     {
-                        candidates.Add((isRow ? col : row, bitmask));
-                    }
-                }
-            }
-
-            return EliminateNakedSets(candidates, setSize, isRow ? index : -1, isRow ? -1 : index);
-        }
-
-        private bool FindNakedSetsInBox(int boxIndex, int setSize, int blockSize)
-        {
-            List<(int, int, long)> candidates = new();
-            int startRow = (boxIndex / blockSize) * blockSize;
-            int startCol = (boxIndex % blockSize) * blockSize;
-
-            for (int i = 0; i < blockSize; i++)
-            {
-                for (int j = 0; j < blockSize; j++)
-                {
-                    int row = startRow + i, col = startCol + j;
-                    if (Tiles[row, col].Value == '0')
-                    {
-                        long bitmask = Tiles[row, col].PossibleValuesBitmask;
-                        if (CountBits(bitmask) <= setSize)
+                        int row = startRow + i, col = startCol + j;
+                        var bitmask = Tiles[row, col].PossibleValuesBitmask;
+                        if (Tiles[row, col].Value == '0' && CountBits(bitmask) <= setSize)
                         {
-                            candidates.Add((row, col, bitmask));
+                            nakedSets.Add((row, col, bitmask));
                         }
                     }
                 }
             }
-            return EliminateNakedSets(candidates, setSize);
+            else
+            {
+                for (int i = 0; i < Size; i++)
+                {
+                    int row = isRow ? index : i, col = isRow ? i : index;
+                    var bitmask = Tiles[row, col].PossibleValuesBitmask;
+                    if (Tiles[row, col].Value == '0' && CountBits(bitmask) <= setSize)
+                    {
+                        nakedSets.Add((row, col, bitmask));
+                    }
+                }
+            }
+
+            return nakedSets;
+        }
+
+        private bool EliminateNakedSets(List<(int, int, long)> candidates)
+        {
+            var groups = candidates.GroupBy(c => c.Item3).Where(g => g.Count() == CountBits(g.Key));
+            bool progress = false;
+            foreach (var group in groups)
+            {
+                long mask = group.Key;
+                foreach (var (row, col, bitmask) in candidates.Except(group))
+                {
+                    Tiles[row, col].PossibleValuesBitmask &= ~mask;
+                    progress = true;
+                }
+            }
+            return progress;
         }
 
         public bool ApplySimplePairs()
@@ -186,15 +226,10 @@ namespace guy_s_sudoku
                     {
                         foreach (char value in GetPossibleValues(Tiles[row, col].PossibleValuesBitmask))
                         {
-                            Tiles[row, col].Value = value;
-                            UpdateConstraints(row, col);
-                            if (!IsValid())
+                            if (IsValidMove(row, col, value))
                             {
-                                Tiles[row, col].Value = '0';
-                                UpdateConstraints(row, col); // Restore previous constraints
-                            }
-                            else
-                            {
+                                Tiles[row, col].Value = value;
+                                UpdateConstraints(row, col);
                                 progress = true;
                                 break;
                             }
@@ -204,152 +239,101 @@ namespace guy_s_sudoku
             }
             return progress;
         }
-        private IEnumerable<char> GetPossibleValues(long bitmask)
+
+
+        private void UpdateConstraints(int row, int col)
         {
-            for (int i = 1; i <= Size; i++)
+            long bitMask = 1L << (Tiles[row, col].Value - '0');
+
+            for (int i = 0; i < Size; i++)
             {
-                if ((bitmask & (1L << i)) != 0)
+                if (Tiles[row, i].Value == '0') Tiles[row, i].PossibleValuesBitmask &= ~bitMask;
+                if (Tiles[i, col].Value == '0') Tiles[i, col].PossibleValuesBitmask &= ~bitMask;
+            }
+
+            int startRow = (row / BlockSize) * BlockSize;
+            int startCol = (col / BlockSize) * BlockSize;
+
+            for (int r = 0; r < BlockSize; r++)
+            {
+                for (int c = 0; c < BlockSize; c++)
                 {
-                    yield return (char)('0' + i);
+                    int currentRow = startRow + r;
+                    int currentCol = startCol + c;
+                    if (currentRow != row && currentCol != col && Tiles[currentRow, currentCol].Value == '0')
+                        Tiles[currentRow, currentCol].PossibleValuesBitmask &= ~bitMask;
                 }
             }
-        }
-        private bool IsValid()
-        {
-            for (int row = 0; row < Size; row++)
-            {
-                var rowValues = new HashSet<int>();
-                for (int col = 0; col < Size; col++)
-                {
-                    if (Tiles[row, col].Value != '0' && !rowValues.Add(Tiles[row, col].Value))
-                    {
-                        return false;
-                    }
-                }
-            }
-            for (int col = 0; col < Size; col++)
-            {
-                var colValues = new HashSet<int>();
-                for (int row = 0; row < Size; row++)
-                {
-                    if (Tiles[row, col].Value != '0' && !colValues.Add(Tiles[row, col].Value))
-                    {
-                        return false;
-                    }
-                }
-            }
-            int blockSize = (int)Math.Sqrt(Size);
-            for (int startRow = 0; startRow < Size; startRow += blockSize)
-            {
-                for (int startCol = 0; startCol < Size; startCol += blockSize)
-                {
-                    var squareValues = new HashSet<int>();
-                    for (int i = 0; i < blockSize; i++)
-                    {
-                        for (int j = 0; j < blockSize; j++)
-                        {
-                            int value = Tiles[startRow + i, startCol + j].Value;
-                            if (value != '0' && !squareValues.Add(value))
-                            {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-            return true;
         }
 
+        private bool IsValueConflicting(int row, int col, char value)
+        {
+            long bitMask = 1L << (value - '0');
+            return (Tiles[row, col].PossibleValuesBitmask & bitMask) == 0;
+        }
 
         private int CountBits(long bitmask) => Convert.ToString(bitmask, 2).Count(c => c == '1');
 
-        private bool EliminateNakedSets(List<(int, long)> candidates, int setSize, int row, int col)
+        private IEnumerable<char> GetPossibleValues(long bitmask)
         {
-            var groups = candidates.GroupBy(c => c.Item2).Where(g => g.Count() == setSize).ToList();
-            if (!groups.Any()) return false;
-
-            bool progress = false;
-            foreach (var group in groups)
-            {
-                long mask = group.Key;
-                foreach (var (i, _) in candidates.Except(group))
-                {
-                    if (row != -1 && col == -1)
-                    {
-                        Tiles[row, i].PossibleValuesBitmask &= ~mask;
-                    }
-                    else if (row == -1 && col != -1)
-                    {
-                        Tiles[i, col].PossibleValuesBitmask &= ~mask;
-                    }
-                    progress = true;
-                }
-            }
-            return progress;
+            return Enumerable.Range(1, Size)
+                .Where(i => (bitmask & (1L << i)) != 0)
+                .Select(i => (char)('0' + i));
         }
 
-        private bool EliminateNakedSets(List<(int, int, long)> candidates, int setSize)
-        {
-            var groups = candidates.GroupBy(c => c.Item3).Where(g => g.Count() == setSize).ToList();
-            if (!groups.Any()) return false;
 
-            bool progress = false;
-            foreach (var group in groups)
-            {
-                long mask = group.Key;
-                foreach (var (r, c, _) in candidates.Except(group))
-                {
-                    Tiles[r, c].PossibleValuesBitmask &= ~mask;
-                    progress = true;
-                }
-            }
-            return progress;
+        private bool IsValidMove(int row, int col, char value)
+        {
+            Tiles[row, col].Value = value;
+            bool isValid = IsValid();
+            Tiles[row, col].Value = '0';
+            return isValid;
         }
-        private void UpdateConstraints(int row, int col)
+        private bool IsValid()
         {
-            char num = Tiles[row, col].Value;
-            long bitMask = 1L << (num - '0');
-            int blockSize = (int)Math.Sqrt(Size);
-
-            // Update row and column constraints
             for (int i = 0; i < Size; i++)
             {
-                if (Tiles[row, i].Value == '0')
-                {
-                    Tiles[row, i].PossibleValuesBitmask &= ~bitMask;
-                }
-                if (Tiles[i, col].Value == '0')
-                {
-                    Tiles[i, col].PossibleValuesBitmask &= ~bitMask;
-                }
+                if (HasDuplicate(Tiles, i, isRow: true) || HasDuplicate(Tiles, i, isRow: false))
+                    return false;
             }
 
-            // Update box constraints
-            int startRow = (row / blockSize) * blockSize;
-            int startCol = (col / blockSize) * blockSize;
-            for (int i = 0; i < blockSize; i++)
+            for (int blockRow = 0; blockRow < BlockSize; blockRow++)
             {
-                for (int j = 0; j < blockSize; j++)
+                for (int blockCol = 0; blockCol < BlockSize; blockCol++)
                 {
-                    if (Tiles[startRow + i, startCol + j].Value == '0')
-                    {
-                        Tiles[startRow + i, startCol + j].PossibleValuesBitmask &= ~bitMask;
-                    }
+                    if (HasDuplicateInBlock(Tiles, blockRow * BlockSize, blockCol * BlockSize))
+                        return false;
                 }
             }
-        }
 
-        private int GetSingleValue(long bitmask)
+            return true;
+        }
+        private bool HasDuplicateInBlock(Tile[,] tiles, int startRow, int startCol)
         {
-            for (int i = 1; i <= Size; i++)
+            var values = new HashSet<char>();
+            for (int r = 0; r < BlockSize; r++)
             {
-                if ((bitmask & (1L << i)) != 0)
+                for (int c = 0; c < BlockSize; c++)
                 {
-                    return i;
+                    char value = tiles[startRow + r, startCol + c].Value;
+                    if (value != '0' && !values.Add(value))
+                        return true;
                 }
             }
-            throw new InvalidOperationException("No single value found in bitmask.");
+            return false;
         }
+
+        private bool HasDuplicate(Tile[,] tiles, int index, bool isRow)
+        {
+            var values = new HashSet<char>();
+            for (int i = 0; i < Size; i++)
+            {
+                char value = isRow ? tiles[index, i].Value : tiles[i, index].Value;
+                if (value != '0' && !values.Add(value))
+                    return true;
+            }
+            return false;
+        }
+
     }
 }
-
