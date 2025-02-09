@@ -23,7 +23,7 @@ namespace guy_s_sudoku
         {
             bool progress;
             int iterations = 0;
-            const int maxIterations = 1000;
+            const int maxIterations = 100000;
 
             do
             {
@@ -33,6 +33,7 @@ namespace guy_s_sudoku
                 if (board.DebugMode)
                 {
                     Console.WriteLine($"Iteration {iterations}, Progress: {progress}");
+                    board.PrintBoard(); // Print board state after each iteration
                 }
 
                 if (iterations > maxIterations)
@@ -51,16 +52,28 @@ namespace guy_s_sudoku
         {
             bool progress = false;
 
-            // Start with simpler heuristics
-            progress = ApplyNakedSingles() || ApplyHiddenSingles();
+            // Apply Naked Singles first as they are the simplest and most effective
+            progress = ApplyNakedSingles();
 
             if (board.DebugMode)
             {
-                Console.WriteLine("After applying Naked Singles and Hidden Singles:");
+                Console.WriteLine("After applying Naked Singles:");
                 board.PrintBoard();
             }
 
-            // If simple heuristics don't progress much, use more advanced ones dynamically
+            // Apply Hidden Singles if Naked Singles did not make much progress
+            if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
+            {
+                progress |= ApplyHiddenSingles();
+
+                if (board.DebugMode)
+                {
+                    Console.WriteLine("After applying Hidden Singles:");
+                    board.PrintBoard();
+                }
+            }
+
+            // Apply Naked Sets and Simple Pairs if the board is still not solved
             if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
             {
                 progress |= ApplyNakedSets() || ApplySimplePairs();
@@ -302,7 +315,7 @@ namespace guy_s_sudoku
                 .Select(i => (char)('0' + i));
         }
 
-        private bool IsValidMove(int row, int col, char value)
+        public bool IsValidMove(int row, int col, char value)
         {
             Tiles[row, col].Value = value;
             bool isValid = board.IsValid();
