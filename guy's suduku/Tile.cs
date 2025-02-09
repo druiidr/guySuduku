@@ -1,20 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace guy_s_suduku
+﻿namespace guy_s_sudoku
 {
     internal class Tile
     {
-            public int Value { get; set; } // The current value of the cell (0 if unsolved)
-            public HashSet<int> PossibleValues { get; set; } // Possible values for this cell
+        public char Value { get; set; }
+        public long PossibleValuesBitmask { get; set; }
 
-            public Tile()
+        public Tile()
+        {
+            Value = '0';
+            PossibleValuesBitmask = (1L << 10) - 2; // All bits set except the least significant bit (0 is not a possible value)
+        }
+
+        public bool IsSingleValue()
+        {
+            return CountSetBits(PossibleValuesBitmask) == 1;
+        }
+
+        private int CountSetBits(long bitmask)
+        {
+            int count = 0;
+            while (bitmask != 0)
             {
-                Value = 0;
-                PossibleValues = new HashSet<int>(Enumerable.Range(1, Constants.SQUARE_PARAMS));
+                count++;
+                bitmask &= (bitmask - 1);
             }
+            return count;
         }
     }
+}
