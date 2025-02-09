@@ -17,6 +17,13 @@ namespace guy_s_sudoku
             if (input.Length != size * size)
                 throw new ArgumentException("Input length does not match the expected size.");
 
+            double fourthRoot = Math.Sqrt(Math.Sqrt(input.Length));
+            if (fourthRoot % 1 != 0)
+                throw new ArgumentException("Input length must be a perfect fourth power to form a valid Sudoku grid.");
+
+            if (!IsValidInputString(input, size))
+                throw new ArgumentException("Input contains invalid characters.");
+
             Size = size;
             BlockSize = (int)Math.Sqrt(Size);
             Tiles = new Tile[Size, Size];
@@ -27,6 +34,19 @@ namespace guy_s_sudoku
 
             if (!IsValidInput())
                 throw new ArgumentException("The provided Sudoku puzzle contains invalid or conflicting entries.");
+        }
+
+        private bool IsValidInputString(string input, int size)
+        {
+            for (int i = 0; i < input.Length; i++)
+            {
+                char c = input[i];
+                if (c != '0' && (c < '1' || c > '9') && (c < 'A' || c > (char)('A' + size - 10)))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private void InitializeBoard(string input)
@@ -85,10 +105,9 @@ namespace guy_s_sudoku
                         Tiles[row, col].PossibleValuesBitmask &= ~(1L << (Tiles[startRow + r, startCol + c].Value - '0'));
                 }
             }
-
             if (DebugMode)
             {
-                Console.WriteLine($"Updated possible values for tile ({row}, {col}): {Convert.ToString(Tiles[row, col].PossibleValuesBitmask, 2).PadLeft(Size + 1, '0')}");
+                Console.WriteLine($"Updated possible values for tile ({row},{col}): {Convert.ToString(Tiles[row, col].PossibleValuesBitmask, 2).PadLeft(Size + 1, '0')}");
             }
         }
 
@@ -124,7 +143,6 @@ namespace guy_s_sudoku
             return true;
         }
 
-
         private bool IsValidInput()
         {
             for (int row = 0; row < Size; row++)
@@ -147,51 +165,9 @@ namespace guy_s_sudoku
 
         public bool Solve()
         {
-            var watch = System.Diagnostics.Stopwatch.StartNew();
-            const long timeout = 10000;  // 10 seconds timeout
-
-            bool progress;
-            int iteration = 0;
-            const int maxIterations = 1000;  // Limit the number of heuristic iterations
-
-            do
-            {
-                progress = Heuristic.ApplyAll();
-                if (DebugMode && progress) LogState($"After Applying Heuristics (Iteration {iteration}):");
-
-                iteration++;
-                if (iteration >= maxIterations)
-                {
-                    Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
-                    LogState("Final State before Exiting:");
-                    return false;
-                }
-
-                if (watch.ElapsedMilliseconds > timeout)
-                {
-                    Console.WriteLine("Solver timed out.");
-                    LogState("Final State before Timeout:");
-                    return false;
-                }
-            } while (progress && !IsSolved());
-
-            if (IsSolved())
-            {
-                LogState("Solved Sudoku:");
-                return true;
-            }
-            else
-            {
-                LogState("Before Backtracking:");
-                var emptyCells = GetEmptyCells();
-                bool result = BacktrackSolve(emptyCells, 0);
-                LogState(result ? "Solved Sudoku:" : "No solution exists.");
-                return result;
-            }
+            var emptyCells = GetEmptyCells();
+            return BacktrackSolve(emptyCells, 0);
         }
-
-
-
 
         public bool IsSolved()
         {
@@ -220,33 +196,6 @@ namespace guy_s_sudoku
             }
             return count;
         }
-
-        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
-        {
-            if (!emptyCells.Any()) return true;
-
-            var cell = emptyCells.First();
-            var possibleValues = GetPossibleValues(cell.Item1, cell.Item2);
-
-            foreach (var value in possibleValues)
-            {
-                Tiles[cell.Item1, cell.Item2].Value = value;
-                UpdateConstraints(cell.Item1, cell.Item2, value, false);
-
-                if (IsValid())
-                {
-                    var remainingCells = emptyCells.Skip(1).ToList();
-                    if (BacktrackSolve(remainingCells, depth + 1)) return true;
-                }
-
-                Tiles[cell.Item1, cell.Item2].Value = '0';
-                UpdateConstraints(cell.Item1, cell.Item2, value, true);
-            }
-
-            return false;
-        }
-
-
 
         public List<Tuple<int, int>> GetEmptyCells()
         {
@@ -284,14 +233,13 @@ namespace guy_s_sudoku
                 {
                     int currentRow = startRow + r;
                     int currentCol = startCol + c;
-                    if (Tiles[currentRow, currentCol] != null && currentRow != row && currentCol != col && Tiles[currentRow, currentCol].Value == '0')
+                    if (currentRow < Size && currentCol < Size && Tiles[currentRow, currentCol] != null && currentRow != row && currentCol != col && Tiles[currentRow, currentCol].Value == '0')
+                    {
                         Tiles[currentRow, currentCol].PossibleValuesBitmask = add ? Tiles[currentRow, currentCol].PossibleValuesBitmask | bitMask : Tiles[currentRow, currentCol].PossibleValuesBitmask & ~bitMask;
+                    }
                 }
             }
         }
-
-
-
 
         public List<char> GetPossibleValues(int row, int col)
         {
@@ -307,7 +255,6 @@ namespace guy_s_sudoku
             return possibleValues;
         }
 
-      
         private bool HasDuplicate(Tile[,] tiles, int index, bool isRow)
         {
             var values = new HashSet<char>();
@@ -372,6 +319,95 @@ namespace guy_s_sudoku
                 }
                 Console.WriteLine();
             }
+        }
+        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
+        {
+            if (depth >= emptyCells.Count)
+            {
+                return IsSolved();
+            }
+
+            var (row, col) = emptyCells[depth];
+            var possibleValues = GetPossibleValues(row, col);
+
+            // Sort possible values by the least constraining value heuristic
+            possibleValues = possibleValues.OrderBy(value => CountConstraints(row, col, value)).ToList();
+
+            foreach (var value in possibleValues)
+            {
+                if (Heuristic.IsValidMove(row, col, value))
+                {
+                    Tiles[row, col].Value = value;
+                    UpdateConstraints(row, col, value, false);
+
+                    if (ForwardCheck(row, col))
+                    {
+                        if (BacktrackSolve(emptyCells, depth + 1))
+                        {
+                            return true;
+                        }
+                    }
+
+                    // Undo move
+                    Tiles[row, col].Value = '0';
+                    UpdateConstraints(row, col, value, true);
+                }
+            }
+
+            return false;
+        }
+
+        private bool ForwardCheck(int row, int col)
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                if (Tiles[row, i].Value == '0' && Tiles[row, i].PossibleValuesBitmask == 0)
+                    return false;
+                if (Tiles[i, col].Value == '0' && Tiles[i, col].PossibleValuesBitmask == 0)
+                    return false;
+            }
+
+            int startRow = (row / BlockSize) * BlockSize;
+            int startCol = (col / BlockSize) * BlockSize;
+
+            for (int r = 0; r < BlockSize; r++)
+            {
+                for (int c = 0; c < BlockSize; c++)
+                {
+                    if (Tiles[startRow + r, startCol + c].Value == '0' && Tiles[startRow + r, startCol + c].PossibleValuesBitmask == 0)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
+        private int CountConstraints(int row, int col, char value)
+        {
+            int constraints = 0;
+            long bitMask = 1L << (value - '0');
+
+            for (int i = 0; i < Size; i++)
+            {
+                if (Tiles[row, i].Value == '0' && (Tiles[row, i].PossibleValuesBitmask & bitMask) != 0)
+                    constraints++;
+                if (Tiles[i, col].Value == '0' && (Tiles[i, col].PossibleValuesBitmask & bitMask) != 0)
+                    constraints++;
+            }
+
+            int startRow = (row / BlockSize) * BlockSize;
+            int startCol = (col / BlockSize) * BlockSize;
+
+            for (int r = 0; r < BlockSize; r++)
+            {
+                for (int c = 0; c < BlockSize; c++)
+                {
+                    if (Tiles[startRow + r, startCol + c].Value == '0' && (Tiles[startRow + r, startCol + c].PossibleValuesBitmask & bitMask) != 0)
+                        constraints++;
+                }
+            }
+
+            return constraints;
         }
     }
 }
