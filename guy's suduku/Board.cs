@@ -85,7 +85,45 @@ namespace guy_s_sudoku
                         Tiles[row, col].PossibleValuesBitmask &= ~(1L << (Tiles[startRow + r, startCol + c].Value - '0'));
                 }
             }
+
+            if (DebugMode)
+            {
+                Console.WriteLine($"Updated possible values for tile ({row}, {col}): {Convert.ToString(Tiles[row, col].PossibleValuesBitmask, 2).PadLeft(Size + 1, '0')}");
+            }
         }
+
+        public bool IsValid()
+        {
+            for (int i = 0; i < Size; i++)
+            {
+                if (HasDuplicate(Tiles, i, isRow: true) || HasDuplicate(Tiles, i, isRow: false))
+                {
+                    if (DebugMode)
+                    {
+                        Console.WriteLine($"Duplicate found in row or column {i}");
+                    }
+                    return false;
+                }
+            }
+
+            for (int blockRow = 0; blockRow < BlockSize; blockRow++)
+            {
+                for (int blockCol = 0; blockCol < BlockSize; blockCol++)
+                {
+                    if (HasDuplicateInBlock(Tiles, blockRow * BlockSize, blockCol * BlockSize))
+                    {
+                        if (DebugMode)
+                        {
+                            Console.WriteLine($"Duplicate found in block starting at ({blockRow * BlockSize}, {blockCol * BlockSize})");
+                        }
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
 
         private bool IsValidInput()
         {
@@ -253,6 +291,8 @@ namespace guy_s_sudoku
         }
 
 
+
+
         public List<char> GetPossibleValues(int row, int col)
         {
             var possibleValues = new List<char>();
@@ -267,26 +307,7 @@ namespace guy_s_sudoku
             return possibleValues;
         }
 
-        public bool IsValid()
-        {
-            for (int i = 0; i < Size; i++)
-            {
-                if (HasDuplicate(Tiles, i, isRow: true) || HasDuplicate(Tiles, i, isRow: false))
-                    return false;
-            }
-
-            for (int blockRow = 0; blockRow < BlockSize; blockRow++)
-            {
-                for (int blockCol = 0; blockCol < BlockSize; blockCol++)
-                {
-                    if (HasDuplicateInBlock(Tiles, blockRow * BlockSize, blockCol * BlockSize))
-                        return false;
-                }
-            }
-
-            return true;
-        }
-
+      
         private bool HasDuplicate(Tile[,] tiles, int index, bool isRow)
         {
             var values = new HashSet<char>();

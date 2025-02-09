@@ -54,10 +54,22 @@ namespace guy_s_sudoku
             // Start with simpler heuristics
             progress = ApplyNakedSingles() || ApplyHiddenSingles();
 
+            if (board.DebugMode)
+            {
+                Console.WriteLine("After applying Naked Singles and Hidden Singles:");
+                board.PrintBoard();
+            }
+
             // If simple heuristics don't progress much, use more advanced ones dynamically
             if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
             {
                 progress |= ApplyNakedSets() || ApplySimplePairs();
+
+                if (board.DebugMode)
+                {
+                    Console.WriteLine("After applying Naked Sets and Simple Pairs:");
+                    board.PrintBoard();
+                }
             }
 
             return progress;
