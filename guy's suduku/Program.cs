@@ -5,24 +5,38 @@ using System.IO;
 
 class Program
 {
-    /*
-     * 
-     * 
-     */
+    /* DOES: Entry point of the application. Calls the Recieve method to start the program.
+       ARGS: args - Command line arguments (not used).
+       RETURNS: None.
+       RAISES: None. */
     static void Main(string[] args)
-   
     {
         Recieve();
     }
 
+    /* DOES: Receives input from the user and processes Sudoku puzzles.
+       ARGS: None.
+       RETURNS: None.
+       RAISES: None. */
     public static void Recieve()
     {
-        bool debugMode = GetDebugMode();
-        List<string> puzzles = GetPuzzles(debugMode);
+        try
+        {
+            bool debugMode = GetDebugMode();
+            List<string> puzzles = GetPuzzles(debugMode);
 
-        // The total solve time and solved puzzles count will be calculated in GetPuzzles method
+            // The total solve time and solved puzzles count will be calculated in GetPuzzles method
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+        }
     }
 
+    /* DOES: Prompts the user to enable or disable debug mode.
+       ARGS: None.
+       RETURNS: True if debug mode is enabled, otherwise false.
+       RAISES: None. */
     private static bool GetDebugMode()
     {
         Console.WriteLine("Would you like to enable debug mode? (yes/no)");
@@ -30,6 +44,10 @@ class Program
         return debugInput == "yes";
     }
 
+    /* DOES: Prompts the user to choose an input method and retrieves Sudoku puzzles accordingly.
+       ARGS: debugMode - Indicates whether debug mode is enabled.
+       RETURNS: A list of Sudoku puzzles as strings.
+       RAISES: None. */
     private static List<string> GetPuzzles(bool debugMode)
     {
         Console.WriteLine("Choose input method: (1) Direct Input (2) File Input");
@@ -54,6 +72,10 @@ class Program
         return puzzles;
     }
 
+    /* DOES: Prompts the user to enter Sudoku puzzles directly and solves them.
+       ARGS: debugMode - Indicates whether debug mode is enabled.
+       RETURNS: A list of Sudoku puzzles as strings.
+       RAISES: None. */
     private static List<string> GetPuzzlesFromDirectInput(bool debugMode)
     {
         List<string> puzzles = new List<string>();
@@ -111,6 +133,10 @@ class Program
         return puzzles;
     }
 
+    /* DOES: Prompts the user to enter the file path of a file containing Sudoku puzzles and solves them.
+       ARGS: debugMode - Indicates whether debug mode is enabled.
+       RETURNS: A list of Sudoku puzzles as strings.
+       RAISES: None. */
     private static List<string> GetPuzzlesFromFileInput(bool debugMode)
     {
         List<string> puzzles = new List<string>();
@@ -132,6 +158,11 @@ class Program
         return puzzles;
     }
 
+    /* DOES: Solves a list of Sudoku puzzles and prints the results.
+       ARGS: puzzles - A list of Sudoku puzzles as strings.
+             debugMode - Indicates whether debug mode is enabled.
+       RETURNS: None.
+       RAISES: None. */
     private static void SolvePuzzles(List<string> puzzles, bool debugMode)
     {
         double totalSolveTime = 0;

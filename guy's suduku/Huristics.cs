@@ -9,8 +9,15 @@ namespace guy_s_sudoku
         private readonly Tile[,] Tiles;
         private readonly int Size;
         private readonly int BlockSize;
-        private readonly Board board; // Reference to Board class
+        private readonly Board board;
 
+
+        /* DOES: Initializes the Heuristic class with the given tiles, size, and board reference.
+             ARGS: tiles - The 2D array of tiles representing the board.
+                   size - The size of the board.
+                   board - The reference to the Board class.
+             RETURNS: None.
+             RAISES: None. */
         public Heuristic(Tile[,] tiles, int size, Board board)
         {
             Tiles = tiles;
@@ -19,6 +26,10 @@ namespace guy_s_sudoku
             this.board = board; // Initialize Board reference
         }
 
+       /* DOES: Applies all heuristic strategies iteratively until no progress is made or the board is solved.
+         ARGS: None.
+         RETURNS: True if progress is made, otherwise false.
+         RAISES: None.*/
         public bool ApplyAll()
         {
             bool progress;
@@ -47,7 +58,10 @@ namespace guy_s_sudoku
             return progress;
         }
 
-
+        /* DOES: Applies heuristic strategies in a priority order (Naked Singles, Hidden Singles, etc.)
+        ARGS: None.
+        RETURNS: True if progress is made, otherwise false.
+        RAISES: None.*/
         private bool ApplyHeuristics()
         {
             bool progress = false;
@@ -87,7 +101,10 @@ namespace guy_s_sudoku
 
             return progress;
         }
-
+        /* DOES: Determines the threshold for applying deeper heuristics based on board size.
+           ARGS: None.
+           RETURNS: An integer threshold value.
+           RAISES: None..*/
         private int GetAdaptiveThreshold()
         {
             // Set adaptive threshold based on board size
@@ -96,6 +113,10 @@ namespace guy_s_sudoku
             return 30; // Larger boards
         }
 
+        /* DOES: Applies the Naked Singles heuristic by setting values when only one possible value remains.
+         ARGS: None.
+         RETURNS: True if any values were placed, otherwise false.
+        RAISES: None.*/
         public bool ApplyNakedSingles()
         {
             bool progress = false;
@@ -123,13 +144,20 @@ namespace guy_s_sudoku
             return progress;
         }
 
-
+       /* DOES: Extracts the single value from a bitmask when only one bit is set.
+        ARGS: bitmask - The bitmask containing possible values.
+        RETURNS: The single remaining value as a character.
+        RAISES: None.*/
         private char GetSingleValue(long bitmask)
         {
             int value = (int)Math.Log2(bitmask);
             return (char)('0' + value);
         }
 
+        /* DOES: Applies the Hidden Singles heuristic by finding hidden singles in rows, columns, and boxes.
+         * ARGS:NONE
+         RETURNS: true if any progress is made, otherwise false
+        RAISES: none*/
         public bool ApplyHiddenSingles()
         {
             bool progress = false;
@@ -154,7 +182,13 @@ namespace guy_s_sudoku
             }
             return progress;
         }
-
+        
+        /* DOES: Finds hidden singles in a specific box and sets the value if found.
+           ARGS: boxRow - The row index of the box.
+                 boxCol - The column index of the box.
+                 bitMask - The bitmask representing the possible value to find.
+           RETURNS: True if a hidden single is found and set, otherwise false.
+           RAISES: None. */
         private bool FindHiddenSingleInBox(int boxRow, int boxCol, long bitMask)
         {
             int startRow = boxRow * BlockSize;
@@ -188,6 +222,12 @@ namespace guy_s_sudoku
             return false;
         }
 
+        /* DOES: Finds hidden singles in a specific row or column and sets the value if found.
+           ARGS: index - The index of the row or column.
+                 bitMask - The bitmask representing the possible value to find.
+                 isRow - True if searching in a row, false if searching in a column.
+           RETURNS: True if a hidden single is found and set, otherwise false.
+           RAISES: None. */
         private bool FindHiddenSingle(int index, long bitMask, bool isRow)
         {
             int pos = -1, count = 0;
@@ -215,6 +255,10 @@ namespace guy_s_sudoku
         }
 
 
+        /* DOES: Applies the Naked Sets heuristic by identifying and eliminating naked sets in rows, columns, and boxes.
+           ARGS: None.
+           RETURNS: True if any values were eliminated, otherwise false.
+           RAISES: None. */
         public bool ApplyNakedSets()
         {
             bool progress = false;
@@ -230,6 +274,13 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /* DOES: Finds naked sets of a given size in rows, columns, or boxes.
+           ARGS: index - The index of the row, column, or box.
+                 setSize - The size of the naked set to find.
+                 isRow - True if searching in a row, false if searching in a column.
+                 isBox - True if searching in a box.
+           RETURNS: A list of tuples containing the row, column, and bitmask of the naked sets found.
+           RAISES: None. */
         private List<(int, int, long)> FindNakedSets(int index, int setSize, bool isRow, bool isBox)
         {
             var nakedSets = new List<(int, int, long)>();
@@ -266,6 +317,10 @@ namespace guy_s_sudoku
             return nakedSets;
         }
 
+        /* DOES: Eliminates values from the possible values of tiles based on identified naked sets.
+           ARGS: candidates - A list of tuples containing the row, column, and bitmask of the naked sets.
+           RETURNS: True if any values were eliminated, otherwise false.
+           RAISES: None. */
         private bool EliminateNakedSets(List<(int, int, long)> candidates)
         {
             var groups = candidates.GroupBy(c => c.Item3).Where(g => g.Count() == board.CountSetBits(g.Key));
@@ -282,6 +337,10 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /* DOES: Applies the Simple Pairs heuristic by identifying and placing values for tiles with exactly two possible values.
+           ARGS: None.
+           RETURNS: True if any values were placed, otherwise false.
+           RAISES: None. */
         public bool ApplySimplePairs()
         {
             bool progress = false;
@@ -308,6 +367,10 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /* DOES: Retrieves the possible values for a tile based on its bitmask.
+           ARGS: bitmask - The bitmask containing possible values.
+           RETURNS: An enumerable of characters representing the possible values.
+           RAISES: None. */
         private IEnumerable<char> GetPossibleValues(long bitmask)
         {
             return Enumerable.Range(1, Size)
@@ -315,6 +378,12 @@ namespace guy_s_sudoku
                 .Select(i => (char)('0' + i));
         }
 
+        /* DOES: Checks if placing a value in a specific tile is a valid move.
+           ARGS: row - The row index of the tile.
+                 col - The column index of the tile.
+                 value - The value to place in the tile.
+           RETURNS: True if the move is valid, otherwise false.
+           RAISES: None. */
         public bool IsValidMove(int row, int col, char value)
         {
             Tiles[row, col].Value = value;
