@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace guy_s_sudoku
@@ -7,32 +8,25 @@ namespace guy_s_sudoku
     internal class Board
     {
         private Tile[,] Tiles { get; }
-        private int Size { get; }
+        public int Size { get; }
         private int BlockSize { get; }
         private Heuristic Heuristic { get; }
         public bool DebugMode { get; }
-
-        /* DOES: Initializes a new instance of the Board class with the given input string, size, and debug mode.
-           ARGS: input - The input string representing the Sudoku puzzle.
-                 size - The size of the Sudoku board.
-                 debugMode - Indicates whether debug mode is enabled.
-           RETURNS: None.
-           RAISES: ArgumentException if the input length does not match the expected size, if the input length is not a perfect fourth power, or if the input contains invalid characters. */
+        /// <summary>
+        /// Board constructor to initialize the board.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="size"></param>
+        /// <param name="debugMode"></param>
+        /// <exception cref="ArgumentException"></exception>
         public Board(string input, int size, bool debugMode = false)
         {
             if (input.Length != size * size)
                 throw new ArgumentException("Input length does not match the expected size.");
 
-            double fourthRoot = Math.Sqrt(Math.Sqrt(input.Length));
-            if (fourthRoot % 1 != 0)
-                throw new ArgumentException("Input length must be a perfect fourth power to form a valid Sudoku grid.");
-
-            if (!IsValidInputString(input, size))
-                throw new ArgumentException("Input contains invalid characters.");
-
             Size = size;
             BlockSize = (int)Math.Sqrt(Size);
-            Tiles = new Tile[Size, Size];
+            Tiles = new Tile[size, size];
             DebugMode = debugMode;
             Heuristic = new Heuristic(Tiles, Size, this); // Pass Board instance to Heuristic
 
@@ -41,29 +35,33 @@ namespace guy_s_sudoku
             if (!IsValidInput())
                 throw new ArgumentException("The provided Sudoku puzzle contains invalid or conflicting entries.");
         }
-
-        /* DOES: Validates the input string to ensure it contains only valid characters for the given size.
-           ARGS: input - The input string representing the Sudoku puzzle.
-                 size - The size of the Sudoku board.
-           RETURNS: True if the input string is valid, otherwise false.
-           RAISES: None. */
-        private bool IsValidInputString(string input, int size)
+        /// <summary>
+        /// IsValidInput method to check if the input is valid.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsValidInput()
         {
-            for (int i = 0; i < input.Length; i++)
+            for (int row = 0; row < Size; row++)
             {
-                char c = input[i];
-                if ((c < '0' || c > '0'+size))
-                {
+                if (HasDuplicate(Tiles, row, isRow: true) || HasDuplicate(Tiles, row, isRow: false))
                     return false;
+            }
+
+            for (int blockRow = 0; blockRow < BlockSize; blockRow++)
+            {
+                for (int blockCol = 0; blockCol < BlockSize; blockCol++)
+                {
+                    if (HasDuplicateInBlock(Tiles, blockRow * BlockSize, blockCol * BlockSize))
+                        return false;
                 }
             }
+
             return true;
         }
-
-        /* DOES: Initializes the Sudoku board with the given input string.
-           ARGS: input - The input string representing the Sudoku puzzle.
-           RETURNS: None.
-           RAISES: None. */
+        /// <summary>
+        /// InitializeBoard method to initialize the board.
+        /// </summary>
+        /// <param name="input"></param>
         private void InitializeBoard(string input)
         {
             int index = 0;
@@ -95,12 +93,11 @@ namespace guy_s_sudoku
 
             if (DebugMode) LogState("Initial Board Setup:");
         }
-
-        /* DOES: Updates the possible values for a tile based on the current state of the board.
-           ARGS: row - The row index of the tile.
-                 col - The column index of the tile.
-           RETURNS: None.
-           RAISES: None. */
+        /// <summary>
+        /// UpdatePossibleValues method to update the possible values for a given position.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
         private void UpdatePossibleValues(int row, int col)
         {
             Tiles[row, col].PossibleValuesBitmask = (1L << (Size + 1)) - 2; // All bits set except for the 0th bit
@@ -125,96 +122,61 @@ namespace guy_s_sudoku
                         Tiles[row, col].PossibleValuesBitmask &= ~(1L << (Tiles[startRow + r, startCol + c].Value - '0'));
                 }
             }
-            if (DebugMode)
-            {
-                Console.WriteLine($"Updated possible values for tile ({row},{col}): {Convert.ToString(Tiles[row, col].PossibleValuesBitmask, 2).PadLeft(Size + 1, '0')}");
-            }
         }
-
-        /* DOES: Checks if the current state of the board is valid.
-           ARGS: None.
-           RETURNS: True if the board is valid, otherwise false.
-           RAISES: None. */
-        public bool IsValid()
-        {
-            for (int i = 0; i < Size; i++)
-            {
-                if (HasDuplicate(Tiles, i, isRow: true) || HasDuplicate(Tiles, i, isRow: false))
-                {
-                    if (DebugMode)
-                    {
-                        Console.WriteLine($"Duplicate found in row or column {i}");
-                    }
-                    return false;
-                }
-            }
-
-            for (int blockRow = 0; blockRow < BlockSize; blockRow++)
-            {
-                for (int blockCol = 0; blockCol < BlockSize; blockCol++)
-                {
-                    if (HasDuplicateInBlock(Tiles, blockRow * BlockSize, blockCol * BlockSize))
-                    {
-                        if (DebugMode)
-                        {
-                            Console.WriteLine($"Duplicate found in block starting at ({blockRow * BlockSize}, {blockCol * BlockSize})");
-                        }
-                        return false;
-                    }
-                }
-            }
-
-            return true;
-        }
-
-        /* DOES: Checks if the initial input for the Sudoku puzzle is valid.
-           ARGS: None.
-           RETURNS: True if the input is valid, otherwise false.
-           RAISES: None. */
-        private bool IsValidInput()
-        {
-            for (int row = 0; row < Size; row++)
-            {
-                if (HasDuplicate(Tiles, row, isRow: true) || HasDuplicate(Tiles, row, isRow: false))
-                    return false;
-            }
-
-            for (int blockRow = 0; blockRow < BlockSize; blockRow++)
-            {
-                for (int blockCol = 0; blockCol < BlockSize; blockCol++)
-                {
-                    if (HasDuplicateInBlock(Tiles, blockRow * BlockSize, blockCol * BlockSize))
-                        return false;
-                }
-            }
-
-            return true;
-        }
-
-        /* DOES: Solves the Sudoku puzzle using backtracking and heuristics.
-           ARGS: None.
-           RETURNS: True if the puzzle is solved, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// Solve method to solve the puzzle.
+        /// </summary>
+        /// <returns></returns>
         public bool Solve()
         {
-            var emptyCells = GetEmptyCells();
+            var watch = Stopwatch.StartNew();
+            const long timeout = 5000;  // 5 seconds timeout
 
-            // Apply advanced heuristics for larger boards
-            if (Size > 9)
+            if (DebugMode) LogState("Initial Board Setup:");
+
+            bool progress;
+            int iteration = 0;
+            const int maxIterations = 200;  // Limit the number of heuristic iterations
+
+            do
             {
-                while (Heuristic.ApplyAll())
+                progress = Heuristic.ApplyAll();
+                if (DebugMode && progress) LogState($"After Applying Heuristics (Iteration {iteration}):");
+
+                iteration++;
+                if (iteration >= maxIterations)
                 {
-                    emptyCells = GetEmptyCells(); // Recalculate empty cells after applying heuristics
+                    Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
+                    LogState("Final State before Exiting:");
+                    return false;
                 }
+
+                if (watch.ElapsedMilliseconds > timeout)
+                {
+                    Console.WriteLine("Solver timed out.");
+                    LogState("Final State before Timeout:");
+                    return false;
+                }
+            } while (progress && !IsSolved());
+
+            if (IsSolved())
+            {
+                LogState("Solved Sudoku:");
+                return true;
             }
-
-            return BacktrackSolve(emptyCells, 0);
+            else
+            {
+                LogState("Before Backtracking:");
+                var emptyCells = GetEmptyCells();
+                bool result = BacktrackSolve(emptyCells, 0);
+                LogState(result ? "Solved Sudoku:" : "No solution exists.");
+                return result;
+            }
         }
-
-        /* DOES: Checks if the Sudoku puzzle is solved.
-           ARGS: None.
-           RETURNS: True if the puzzle is solved, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// IsSolved method to check if the puzzle is solved.
+        /// </summary>
+        /// <returns></returns>
         public bool IsSolved()
         {
             for (int row = 0; row < Size; row++)
@@ -226,11 +188,10 @@ namespace guy_s_sudoku
             }
             return true;
         }
-
-        /* DOES: Counts the number of empty cells in the Sudoku puzzle.
-           ARGS: None.
-           RETURNS: The number of empty cells.
-           RAISES: None. */
+        /// <summary>
+        /// CountEmptyCells method to count the empty cells.
+        /// </summary>
+        /// <returns></returns>
         public int CountEmptyCells()
         {
             int count = 0;
@@ -246,11 +207,10 @@ namespace guy_s_sudoku
             }
             return count;
         }
-
-        /* DOES: Retrieves a list of empty cells in the Sudoku puzzle.
-           ARGS: None.
-           RETURNS: A list of tuples representing the row and column indices of empty cells.
-           RAISES: None. */
+        /// <summary>
+        /// GetEmptyCells method to get the empty cells.
+        /// </summary>
+        /// <returns></returns>
         public List<Tuple<int, int>> GetEmptyCells()
         {
             var emptyCells = new List<Tuple<int, int>>();
@@ -264,53 +224,48 @@ namespace guy_s_sudoku
             }
             return emptyCells.OrderBy(cell => CountSetBits(Tiles[cell.Item1, cell.Item2].PossibleValuesBitmask)).ToList();
         }
-
-        /* DOES: Updates the constraints for a tile based on the value placed or removed.
-           ARGS: row - The row index of the tile.
-                 col - The column index of the tile.
-                 value - The value to place or remove.
-                 add - True to add the value, false to remove it.
-           RETURNS: None.
-           RAISES: None. */
+        /// <summary>
+        ///     UpdateConstraints method to update the constraints for a given value at a given position.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <param name="value"></param>
+        /// <param name="add"></param>
         public void UpdateConstraints(int row, int col, char value, bool add)
         {
             long bitMask = 1L << (value - '0');
-            try
+
+            for (int i = 0; i < Size; i++)
             {
-                for (int i = 0; i < Size; i++)
+                if (Tiles[row, i] != null && i != col && Tiles[row, i].Value == '0')
+                    Tiles[row, i].PossibleValuesBitmask = add ? Tiles[row, i].PossibleValuesBitmask | bitMask : Tiles[row, i].PossibleValuesBitmask & ~bitMask;
+
+                if (Tiles[i, col] != null && i != row && Tiles[i, col].Value == '0')
+                    Tiles[i, col].PossibleValuesBitmask = add ? Tiles[i, col].PossibleValuesBitmask | bitMask : Tiles[i, col].PossibleValuesBitmask & ~bitMask;
+            }
+
+            int startRow = (row / BlockSize) * BlockSize;
+            int startCol = (col / BlockSize) * BlockSize;
+
+            for (int r = 0; r < BlockSize; r++)
+            {
+                for (int c = 0; c < BlockSize; c++)
                 {
-                    if (Tiles[row, i] != null && i != col && Tiles[row, i].Value == '0')
-                        Tiles[row, i].PossibleValuesBitmask = add ? Tiles[row, i].PossibleValuesBitmask | bitMask : Tiles[row, i].PossibleValuesBitmask & ~bitMask;
-
-                    if (Tiles[i, col] != null && i != row && Tiles[i, col].Value == '0')
-                        Tiles[row, i].PossibleValuesBitmask = add ? Tiles[row, i].PossibleValuesBitmask | bitMask : Tiles[row, i].PossibleValuesBitmask & ~bitMask;
-                }
-
-                int startRow = (row / BlockSize) * BlockSize;
-                int startCol = (col / BlockSize) * BlockSize;
-
-                for (int r = 0; r < BlockSize; r++)
-                {
-                    for (int c = 0; c < BlockSize; c++)
+                    int currentRow = startRow + r;
+                    int currentCol = startCol + c;
+                    if (currentRow < Size && currentCol < Size && Tiles[currentRow, currentCol] != null && currentRow != row && currentCol != col && Tiles[currentRow, currentCol].Value == '0')
                     {
-                        int currentRow = startRow + r;
-                        int currentCol = startCol + c;
-                        if (currentRow < Size && currentCol < Size && Tiles[currentRow, currentCol] != null && currentRow != row && currentCol != col && Tiles[currentRow, currentCol].Value == '0')
-                        {
-                            Tiles[currentRow, currentCol].PossibleValuesBitmask = add ? Tiles[currentRow, currentCol].PossibleValuesBitmask | bitMask : Tiles[currentRow, currentCol].PossibleValuesBitmask & ~bitMask;
-                        }
+                        Tiles[currentRow, currentCol].PossibleValuesBitmask = add ? Tiles[currentRow, currentCol].PossibleValuesBitmask | bitMask : Tiles[currentRow, currentCol].PossibleValuesBitmask & ~bitMask;
                     }
                 }
             }
-            catch (Exception ex)
-            { }
         }
-
-        /* DOES: Retrieves the possible values for a tile based on its bitmask.
-           ARGS: row - The row index of the tile.
-                 col - The column index of the tile.
-           RETURNS: A list of characters representing the possible values.
-           RAISES: None. */
+        /// <summary>
+        /// GetPossibleValues method to get the possible values for a given position.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <returns></returns>
         public List<char> GetPossibleValues(int row, int col)
         {
             var possibleValues = new List<char>();
@@ -324,13 +279,13 @@ namespace guy_s_sudoku
 
             return possibleValues;
         }
-
-        /* DOES: Checks if there are duplicate values in a row or column.
-           ARGS: tiles - The 2D array of tiles.
-                 index - The index of the row or column.
-                 isRow - True if checking a row, false if checking a column.
-           RETURNS: True if there are duplicate values, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// HasDuplicate method to check if there is a duplicate in a row or column.
+        /// </summary>
+        /// <param name="tiles"></param>
+        /// <param name="index"></param>
+        /// <param name="isRow"></param>
+        /// <returns></returns>
         private bool HasDuplicate(Tile[,] tiles, int index, bool isRow)
         {
             var values = new HashSet<char>();
@@ -342,13 +297,13 @@ namespace guy_s_sudoku
             }
             return false;
         }
-
-        /* DOES: Checks if there are duplicate values in a block.
-           ARGS: tiles - The 2D array of tiles.
-                 startRow - The starting row index of the block.
-                 startCol - The starting column index of the block.
-           RETURNS: True if there are duplicate values, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        ///    HasDuplicateInBlock method to check if there is a duplicate in a block.
+        /// </summary>
+        /// <param name="tiles"></param>
+        /// <param name="startRow"></param>
+        /// <param name="startCol"></param>
+        /// <returns></returns>
         private bool HasDuplicateInBlock(Tile[,] tiles, int startRow, int startCol)
         {
             var values = new HashSet<char>();
@@ -363,11 +318,11 @@ namespace guy_s_sudoku
             }
             return false;
         }
-
-        /* DOES: Counts the number of set bits in a bitmask.
-           ARGS: bitMask - The bitmask to count set bits in.
-           RETURNS: The number of set bits in the bitmask.
-           RAISES: None. */
+        /// <summary>
+        ///     CountSetBits method to count the set bits in a given bitmask.
+        /// </summary>
+        /// <param name="bitMask"></param>
+        /// <returns></returns>
         public int CountSetBits(long bitMask)
         {
             int count = 0;
@@ -378,11 +333,10 @@ namespace guy_s_sudoku
             }
             return count;
         }
-
-        /* DOES: Logs the current state of the board with a message.
-           ARGS: message - The message to log.
-           RETURNS: None.
-           RAISES: None. */
+        /// <summary>
+        /// LogState method to log the state of the board.
+        /// </summary>
+        /// <param name="message"></param>
         private void LogState(string message)
         {
             Console.WriteLine(message);
@@ -397,11 +351,9 @@ namespace guy_s_sudoku
             }
             Console.WriteLine();
         }
-
-        /* DOES: Prints the current state of the board.
-           ARGS: None.
-           RETURNS: None.
-           RAISES: None. */
+        /// <summary>
+        /// PrintBoard method to print the board.
+        /// </summary>
         public void PrintBoard()
         {
             for (int row = 0; row < Size; row++)
@@ -414,13 +366,13 @@ namespace guy_s_sudoku
                 Console.WriteLine();
             }
         }
-
-        /* DOES: Solves the Sudoku puzzle using backtracking.
-           ARGS: emptyCells - A list of tuples representing the row and column indices of empty cells.
-                 depth - The current depth of the backtracking algorithm.
-           RETURNS: True if the puzzle is solved, otherwise false.
-           RAISES: None. */
-        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
+        /// <summary>
+        /// BacktrackSolve method to solve the puzzle using backtracking.
+        /// </summary>
+        /// <param name="emptyCells"></param>
+        /// <param name="depth"></param>
+        /// <returns></returns>
+        public bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
         {
             if (depth >= emptyCells.Count)
             {
@@ -433,6 +385,7 @@ namespace guy_s_sudoku
             // Sort possible values by the least constraining value heuristic
             possibleValues = possibleValues.OrderBy(value => CountConstraints(row, col, value)).ToList();
 
+            var watch = Stopwatch.StartNew();
             foreach (var value in possibleValues)
             {
                 if (Heuristic.IsValidMove(row, col, value))
@@ -453,15 +406,19 @@ namespace guy_s_sudoku
                     UpdateConstraints(row, col, value, true);
                 }
             }
-
+            watch.Stop();
+            if (DebugMode)
+            {
+                Console.WriteLine($"Backtracking Time at depth {depth}: {watch.ElapsedMilliseconds} ms");
+            }
             return false;
         }
-
-        /* DOES: Performs forward checking to ensure no tile has zero possible values.
-           ARGS: row - The row index of the tile.
-                 col - The column index of the tile.
-           RETURNS: True if forward checking is successful, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// ForwardCheck method to check if the move is valid.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <returns></returns>
         private bool ForwardCheck(int row, int col)
         {
             for (int i = 0; i < Size; i++)
@@ -479,22 +436,20 @@ namespace guy_s_sudoku
             {
                 for (int c = 0; c < BlockSize; c++)
                 {
-                    if (Tiles[startRow + r, startCol + c].Value == '0' &&
-                        Tiles[startRow + r, startCol + c].PossibleValuesBitmask == 0)
+                    if (Tiles[startRow + r, startCol + c].Value == '0' && Tiles[startRow + r, startCol + c].PossibleValuesBitmask == 0)
                         return false;
                 }
             }
 
             return true;
         }
-
-
-        /* DOES: Counts the number of constraints for a given value in a tile.
-           ARGS: row - The row index of the tile.
-                 col - The column index of the tile.
-                 value - The value to count constraints for.
-           RETURNS: The number of constraints for the given value.
-           RAISES: None. */
+        /// <summary>
+        /// CountConstraints method to count the constraints for a given value at a given position.
+        /// </summary>
+        /// <param name="row"></param>
+        /// <param name="col"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
         private int CountConstraints(int row, int col, char value)
         {
             int constraints = 0;
@@ -522,6 +477,5 @@ namespace guy_s_sudoku
 
             return constraints;
         }
-
     }
 }

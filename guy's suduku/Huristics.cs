@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace guy_s_sudoku
@@ -9,15 +10,14 @@ namespace guy_s_sudoku
         private readonly Tile[,] Tiles;
         private readonly int Size;
         private readonly int BlockSize;
-        private readonly Board board;
+        private readonly Board board; // Reference to Board class
 
-
-        /* DOES: Initializes the Heuristic class with the given tiles, size, and board reference.
-             ARGS: tiles - The 2D array of tiles representing the board.
-                   size - The size of the board.
-                   board - The reference to the Board class.
-             RETURNS: None.
-             RAISES: None. */
+        /// <summary>
+        /// Heuristic constructor to initialize the tiles, size and board.
+        /// </summary>
+        /// <param name="tiles"></param>
+        /// <param name="size"></param>
+        /// <param name="board"></param>
         public Heuristic(Tile[,] tiles, int size, Board board)
         {
             Tiles = tiles;
@@ -25,16 +25,15 @@ namespace guy_s_sudoku
             BlockSize = (int)Math.Sqrt(size);
             this.board = board; // Initialize Board reference
         }
-
-       /* DOES: Applies all heuristic strategies iteratively until no progress is made or the board is solved.
-         ARGS: None.
-         RETURNS: True if progress is made, otherwise false.
-         RAISES: None.*/
+        /// <summary>
+        /// apply all the heuristics.
+        /// </summary>
+        /// <returns></returns>
         public bool ApplyAll()
         {
             bool progress;
             int iterations = 0;
-            const int maxIterations = 100000;
+            const int maxIterations = 200;
 
             do
             {
@@ -57,54 +56,51 @@ namespace guy_s_sudoku
 
             return progress;
         }
-
-        /* DOES: Applies heuristic strategies in a priority order (Naked Singles, Hidden Singles, etc.)
-        ARGS: None.
-        RETURNS: True if progress is made, otherwise false.
-        RAISES: None.*/
+        /// <summary>
+        /// ApplyHeuristics method to apply heuristics.
+        /// </summary>
+        /// <returns></returns>
         private bool ApplyHeuristics()
         {
             bool progress = false;
+            int emptyCellsCount = board.CountEmptyCells();
 
-            // Apply Naked Singles first as they are the simplest and most effective
-            progress = ApplyNakedSingles();
-
+            // Apply heuristics based on the current state of the board
+            var watch = Stopwatch.StartNew();
+            if (emptyCellsCount > Size * Size * 0.7) // More than 70% empty
+            {
+                progress |= ApplyHiddenSets() || ApplyNakedSets(); // Apply more complex heuristics first
+            }
+            else if (emptyCellsCount < Size * Size * 0.3) // Less than 30% empty
+            {
+                progress |= ApplyNakedSingles() || ApplyHiddenSingles(); // Apply simpler heuristics first
+            }
+            else
+            {
+                progress |= ApplyNakedSingles() || ApplyHiddenSingles() || ApplyNakedSets() || ApplyHiddenSets();
+            }
+            watch.Stop();
             if (board.DebugMode)
             {
-                Console.WriteLine("After applying Naked Singles:");
-                board.PrintBoard();
+                Console.WriteLine($"Heuristics Time: {watch.ElapsedMilliseconds} ms");
+                if (progress) board.PrintBoard();
             }
 
-            // Apply Hidden Singles if Naked Singles did not make much progress
-            if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
+            watch.Restart();
+            progress |= ApplySimplePairs();
+            watch.Stop();
+            if (board.DebugMode)
             {
-                progress |= ApplyHiddenSingles();
-
-                if (board.DebugMode)
-                {
-                    Console.WriteLine("After applying Hidden Singles:");
-                    board.PrintBoard();
-                }
-            }
-
-            // Apply Naked Sets and Simple Pairs if the board is still not solved
-            if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
-            {
-                progress |= ApplyNakedSets() || ApplySimplePairs();
-
-                if (board.DebugMode)
-                {
-                    Console.WriteLine("After applying Naked Sets and Simple Pairs:");
-                    board.PrintBoard();
-                }
+                Console.WriteLine($"Simple Pairs Time: {watch.ElapsedMilliseconds} ms");
+                if (progress) board.PrintBoard();
             }
 
             return progress;
         }
-        /* DOES: Determines the threshold for applying deeper heuristics based on board size.
-           ARGS: None.
-           RETURNS: An integer threshold value.
-           RAISES: None..*/
+        /// <summary>
+        /// ApplyNakedSingles method to apply naked singles.
+        /// </summary>
+        /// <returns></returns>
         private int GetAdaptiveThreshold()
         {
             // Set adaptive threshold based on board size
@@ -112,11 +108,10 @@ namespace guy_s_sudoku
             if (Size <= 9) return 20; // Medium boards
             return 30; // Larger boards
         }
-
-        /* DOES: Applies the Naked Singles heuristic by setting values when only one possible value remains.
-         ARGS: None.
-         RETURNS: True if any values were placed, otherwise false.
-        RAISES: None.*/
+        /// <summary>
+        /// applies naked singles
+        /// </summary>
+        /// <returns></returns>
         public bool ApplyNakedSingles()
         {
             bool progress = false;
@@ -143,21 +138,20 @@ namespace guy_s_sudoku
             }
             return progress;
         }
-
-       /* DOES: Extracts the single value from a bitmask when only one bit is set.
-        ARGS: bitmask - The bitmask containing possible values.
-        RETURNS: The single remaining value as a character.
-        RAISES: None.*/
+        /// <summary>
+        /// isolates the single value from the bitmask.
+        /// </summary>
+        /// <param name="bitmask"></param>
+        /// <returns></returns>
         private char GetSingleValue(long bitmask)
         {
             int value = (int)Math.Log2(bitmask);
             return (char)('0' + value);
         }
-
-        /* DOES: Applies the Hidden Singles heuristic by finding hidden singles in rows, columns, and boxes.
-         * ARGS:NONE
-         RETURNS: true if any progress is made, otherwise false
-        RAISES: none*/
+        /// <summary>
+        /// applies hidden singles
+        /// </summary>
+        /// <returns></returns>
         public bool ApplyHiddenSingles()
         {
             bool progress = false;
@@ -182,13 +176,13 @@ namespace guy_s_sudoku
             }
             return progress;
         }
-        
-        /* DOES: Finds hidden singles in a specific box and sets the value if found.
-           ARGS: boxRow - The row index of the box.
-                 boxCol - The column index of the box.
-                 bitMask - The bitmask representing the possible value to find.
-           RETURNS: True if a hidden single is found and set, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// finds hidden single in the box.
+        /// </summary>
+        /// <param name="boxRow"></param>
+        /// <param name="boxCol"></param>
+        /// <param name="bitMask"></param>
+        /// <returns></returns>
         private bool FindHiddenSingleInBox(int boxRow, int boxCol, long bitMask)
         {
             int startRow = boxRow * BlockSize;
@@ -221,13 +215,13 @@ namespace guy_s_sudoku
             }
             return false;
         }
-
-        /* DOES: Finds hidden singles in a specific row or column and sets the value if found.
-           ARGS: index - The index of the row or column.
-                 bitMask - The bitmask representing the possible value to find.
-                 isRow - True if searching in a row, false if searching in a column.
-           RETURNS: True if a hidden single is found and set, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// FindHiddenSingle method to find hidden
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="bitMask"></param>
+        /// <param name="isRow"></param>
+        /// <returns></returns>
         private bool FindHiddenSingle(int index, long bitMask, bool isRow)
         {
             int pos = -1, count = 0;
@@ -252,13 +246,11 @@ namespace guy_s_sudoku
                 }
             }
             return false;
-        }
+        }/// <summary>
+         ///  ApplyNakedSets method to apply naked sets.
+         /// </summary>
+         /// <returns></returns>
 
-
-        /* DOES: Applies the Naked Sets heuristic by identifying and eliminating naked sets in rows, columns, and boxes.
-           ARGS: None.
-           RETURNS: True if any values were eliminated, otherwise false.
-           RAISES: None. */
         public bool ApplyNakedSets()
         {
             bool progress = false;
@@ -273,14 +265,14 @@ namespace guy_s_sudoku
             }
             return progress;
         }
-
-        /* DOES: Finds naked sets of a given size in rows, columns, or boxes.
-           ARGS: index - The index of the row, column, or box.
-                 setSize - The size of the naked set to find.
-                 isRow - True if searching in a row, false if searching in a column.
-                 isBox - True if searching in a box.
-           RETURNS: A list of tuples containing the row, column, and bitmask of the naked sets found.
-           RAISES: None. */
+        /// <summary>
+        /// finds naked sets according to the given parameters.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="setSize"></param>
+        /// <param name="isRow"></param>
+        /// <param name="isBox"></param>
+        /// <returns></returns>
         private List<(int, int, long)> FindNakedSets(int index, int setSize, bool isRow, bool isBox)
         {
             var nakedSets = new List<(int, int, long)>();
@@ -316,11 +308,11 @@ namespace guy_s_sudoku
 
             return nakedSets;
         }
-
-        /* DOES: Eliminates values from the possible values of tiles based on identified naked sets.
-           ARGS: candidates - A list of tuples containing the row, column, and bitmask of the naked sets.
-           RETURNS: True if any values were eliminated, otherwise false.
-           RAISES: None. */
+        /// <summary>
+        /// EliminateNakedSets method to eliminate naked sets.
+        /// </summary>
+        /// <param name="candidates"></param>
+        /// <returns></returns>
         private bool EliminateNakedSets(List<(int, int, long)> candidates)
         {
             var groups = candidates.GroupBy(c => c.Item3).Where(g => g.Count() == board.CountSetBits(g.Key));
@@ -336,11 +328,99 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+        /// <summary>
+        /// ApplyHiddenSets method to apply hidden sets.
+        /// </summary>
+        /// <returns></returns>
+        public bool ApplyHiddenSets()
+        {
+            bool progress = false;
+            for (int setSize = 2; setSize <= BlockSize; setSize++)
+            {
+                for (int i = 0; i < Size; i++)
+                {
+                    progress |= EliminateHiddenSets(FindHiddenSets(i, setSize, true, false)) ||
+                                EliminateHiddenSets(FindHiddenSets(i, setSize, false, false)) ||
+                                EliminateHiddenSets(FindHiddenSets(i, setSize, false, true));
+                }
+            }
+            return progress;
+        }
+        /// <summary>
+        /// FindHiddenSets method to find hidden sets.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="setSize"></param>
+        /// <param name="isRow"></param>
+        /// <param name="isBox"></param>
+        /// <returns></returns>
+        private List<(int, int, long)> FindHiddenSets(int index, int setSize, bool isRow, bool isBox)
+        {
+            var hiddenSets = new List<(int, int, long)>();
 
-        /* DOES: Applies the Simple Pairs heuristic by identifying and placing values for tiles with exactly two possible values.
-           ARGS: None.
-           RETURNS: True if any values were placed, otherwise false.
-           RAISES: None. */
+            if (isBox)
+            {
+                int startRow = (index / BlockSize) * BlockSize, startCol = (index % BlockSize) * BlockSize;
+                for (int i = 0; i < BlockSize; i++)
+                {
+                    for (int j = 0; j < BlockSize; j++)
+                    {
+                        int row = startRow + i, col = startCol + j;
+                        var bitmask = Tiles[row, col].PossibleValuesBitmask;
+                        if (Tiles[row, col].Value == '0')
+                        {
+                            hiddenSets.Add((row, col, bitmask));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Size; i++)
+                {
+                    int row = isRow ? index : i, col = isRow ? i : index;
+                    var bitmask = Tiles[row, col].PossibleValuesBitmask;
+                    if (Tiles[row, col].Value == '0')
+                    {
+                        hiddenSets.Add((row, col, bitmask));
+                    }
+                }
+            }
+
+            return hiddenSets;
+        }
+        /// <summary>
+        /// EliminateHiddenSets method to eliminate hidden sets.
+        /// </summary>
+        /// <param name="candidates"></param>
+        /// <returns></returns>
+        private bool EliminateHiddenSets(List<(int, int, long)> candidates)
+        {
+            var candidateBitmasks = candidates.Select(c => c.Item3).ToList();
+            bool progress = false;
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var (row1, col1, bitmask1) = candidates[i];
+                for (int j = i + 1; j < candidates.Count; j++)
+                {
+                    var (row2, col2, bitmask2) = candidates[j];
+                    long combinedMask = bitmask1 | bitmask2;
+                    if (board.CountSetBits(combinedMask) == 2 && candidateBitmasks.Count(bm => (bm & combinedMask) != 0) == 2)
+                    {
+                        Tiles[row1, col1].PossibleValuesBitmask &= combinedMask;
+                        Tiles[row2, col2].PossibleValuesBitmask &= combinedMask;
+                        progress = true;
+                    }
+                }
+            }
+
+            return progress;
+        }
+        /// <summary>
+        /// ApplySimplePairs method to apply simple pairs.
+        /// </summary>
+        /// <returns></returns>
         public bool ApplySimplePairs()
         {
             bool progress = false;
@@ -366,11 +446,11 @@ namespace guy_s_sudoku
             }
             return progress;
         }
-
-        /* DOES: Retrieves the possible values for a tile based on its bitmask.
-           ARGS: bitmask - The bitmask containing possible values.
-           RETURNS: An enumerable of characters representing the possible values.
-           RAISES: None. */
+        /// <summary>
+        /// GetPossibleValues method to get the possible values from the bitmask.
+        /// </summary>
+        /// <param name="bitmask"></param>
+        /// <returns></returns>
         private IEnumerable<char> GetPossibleValues(long bitmask)
         {
             return Enumerable.Range(1, Size)
@@ -378,16 +458,10 @@ namespace guy_s_sudoku
                 .Select(i => (char)('0' + i));
         }
 
-        /* DOES: Checks if placing a value in a specific tile is a valid move.
-           ARGS: row - The row index of the tile.
-                 col - The column index of the tile.
-                 value - The value to place in the tile.
-           RETURNS: True if the move is valid, otherwise false.
-           RAISES: None. */
         public bool IsValidMove(int row, int col, char value)
         {
             Tiles[row, col].Value = value;
-            bool isValid = board.IsValid();
+            bool isValid = board.IsValidInput();
             Tiles[row, col].Value = '0';
             return isValid;
         }
