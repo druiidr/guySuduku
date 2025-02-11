@@ -7,6 +7,8 @@ namespace guy_s_sudoku
 {
     internal class Heuristic
     {
+        const int maxIterations = 10000;
+        const double AcceptedEmptySpacePercentage = .7;
         private readonly Tile[,] Tiles;
         private readonly int Size;
         private readonly int BlockSize;
@@ -33,7 +35,7 @@ namespace guy_s_sudoku
         {
             bool progress;
             int iterations = 0;
-            const int maxIterations = 10000;
+           
 
             do
             {
@@ -67,11 +69,11 @@ namespace guy_s_sudoku
 
             // Apply heuristics based on the current state of the board
             var watch = Stopwatch.StartNew();
-            if (emptyCellsCount > Size * Size * 0.7) // More than 70% empty
+            if (emptyCellsCount > Size * Size * AcceptedEmptySpacePercentage) // More than 70% empty
             {
                 progress |= ApplyHiddenSets() || ApplyNakedSets(); // Apply more complex heuristics first
             }
-            else if (emptyCellsCount < Size * Size * 0.3) // Less than 30% empty
+            else if (emptyCellsCount < Size * Size * 1-AcceptedEmptySpacePercentage) // Less than 30% empty
             {
                 progress |= ApplyNakedSingles() || ApplyHiddenSingles(); // Apply simpler heuristics first
             }

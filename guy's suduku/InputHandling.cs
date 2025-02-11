@@ -151,7 +151,7 @@ namespace guy_s_suduku
         /// </summary>
         /// <param name="puzzles"></param>
         /// <param name="debugMode"></param>
-        private static void SolvePuzzles(List<string> puzzles, bool debugMode)
+        private static double SolvePuzzles(List<string> puzzles, bool debugMode)
         {
             double totalSolveTime = 0;
             int solvedPuzzles = 0;
@@ -204,10 +204,12 @@ namespace guy_s_suduku
                 double averageSolveTime = totalSolveTime / solvedPuzzles;
                 Console.WriteLine($"Total solve time for all puzzles: {totalSolveTime} seconds");
                 Console.WriteLine($"Average solve time per puzzle: {averageSolveTime} seconds");
+                return averageSolveTime;
             }
             else
             {
                 Console.WriteLine("No puzzles were solved.");
+                return -1;
             }
         }
     }

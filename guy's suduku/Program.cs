@@ -1,8 +1,8 @@
-﻿using guy_s_sudoku;
-using guy_s_suduku;
+﻿using guy_s_suduku;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 class Program
 {
@@ -13,6 +13,7 @@ class Program
     static void Main(string[] args)
 
     {
+       
         InputHandling.Recieve();
     }
 }

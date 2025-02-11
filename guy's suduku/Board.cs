@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace guy_s_sudoku
 {
-    internal class Board
+    public class Board
     {
         private Tile[,] Tiles { get; }
         public int Size { get; }
@@ -16,15 +16,32 @@ namespace guy_s_sudoku
         private int maxBacktrackDepth = 0;
         private Dictionary<int, int> backtrackDepthCounts = new Dictionary<int, int>();
 
+        /// <summary>
+        /// Board constructor to initialize the board.
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="size"></param>
+        /// <param name="debugMode"></param>
+        /// <exception cref="ArgumentException"></exception>
         public Board(string input, int size, bool debugMode = false)
         {
+            if (input.Length != size * size)
+                throw new ArgumentException("Input length does not match the expected size.");
+            double fourthRoot = Math.Sqrt(Math.Sqrt(input.Length));
+            if (fourthRoot % 1 != 0)
+                throw new ArgumentException("Input length must be a perfect fourth power to form a valid Sudoku grid.");
             Size = size;
             BlockSize = (int)Math.Sqrt(Size);
             Tiles = new Tile[size, size];
             DebugMode = debugMode;
-            Heuristic = new Heuristic(Tiles, Size, this);
+            Heuristic = new Heuristic(Tiles, Size, this); // Pass Board instance to Heuristic
+
             InitializeBoard(input);
+
+            if (!IsValidInput())
+                throw new ArgumentException("The provided Sudoku puzzle contains invalid or conflicting entries.");
         }
+
         /// <summary>
         /// IsValidInput method to check if the input is valid.
         /// </summary>
@@ -48,6 +65,7 @@ namespace guy_s_sudoku
 
             return true;
         }
+
         /// <summary>
         /// InitializeBoard method to initialize the board.
         /// </summary>
@@ -63,13 +81,13 @@ namespace guy_s_sudoku
                     if (input[index] != '0')
                     {
                         Tiles[row, col].Value = input[index];
+                        UpdateConstraints(row, col, input[index], false);
                     }
                     index++;
                 }
             }
 
-            PropagateInitialConstraints(); // Ensure constraints are uniformly propagated from all initial values
-
+            // Ensure all possible values are correctly identified
             for (int row = 0; row < Size; row++)
             {
                 for (int col = 0; col < Size; col++)
@@ -83,32 +101,6 @@ namespace guy_s_sudoku
 
             if (DebugMode) LogState("Initial Board Setup:");
         }
-
-        /// <summary>
-        /// Propagate constraints from initial values.
-        /// </summary>
-        private void PropagateInitialConstraints()
-        {
-            bool changed;
-            do
-            {
-                changed = false;
-                for (int row = 0; row < Size; row++)
-                {
-                    for (int col = 0; col < Size; col++)
-                    {
-                        if (Tiles[row, col].Value == '0' && CountSetBits(Tiles[row, col].PossibleValuesBitmask) == 1)
-                        {
-                            char forcedValue = GetPossibleValues(row, col).First();
-                            Tiles[row, col].Value = forcedValue;
-                            UpdateConstraints(row, col, forcedValue, false);
-                            changed = true;
-                        }
-                    }
-                }
-            } while (changed);
-        }
-
 
         /// <summary>
         /// UpdatePossibleValues method to update the possible values for a given position.
@@ -140,6 +132,7 @@ namespace guy_s_sudoku
                 }
             }
         }
+
         /// <summary>
         /// Solve method to solve the puzzle.
         /// </summary>
@@ -158,10 +151,31 @@ namespace guy_s_sudoku
             Console.WriteLine($"Starting Solve - Empty Cells: {emptyCells.Count}");
             bool result = BacktrackSolve(emptyCells, 0);
             profiler.Stop();
-
-            Console.WriteLine($"Solve Complete: {result} in {profiler.ElapsedMilliseconds}ms");
-            Console.WriteLine($"Max Backtracking Depth: {maxBacktrackDepth}");
             return result;
+        }
+        /// <summary>
+        /// PropagateInitialConstraints method to propagate the initial constraints.
+        /// </summary>
+        private void PropagateInitialConstraints()
+        {
+            bool changed;
+            do
+            {
+                changed = false;
+                for (int row = 0; row < Size; row++)
+                {
+                    for (int col = 0; col < Size; col++)
+                    {
+                        if (Tiles[row, col].Value == '0' && CountSetBits(Tiles[row, col].PossibleValuesBitmask) == 1)
+                        {
+                            char forcedValue = GetPossibleValues(row, col).First();
+                            Tiles[row, col].Value = forcedValue;
+                            UpdateConstraints(row, col, forcedValue, false);
+                            changed = true;
+                        }
+                    }
+                }
+            } while (changed);
         }
         /// <summary>
         /// IsSolved method to check if the puzzle is solved.
@@ -178,6 +192,7 @@ namespace guy_s_sudoku
             }
             return true;
         }
+
         /// <summary>
         /// CountEmptyCells method to count the empty cells.
         /// </summary>
@@ -197,6 +212,7 @@ namespace guy_s_sudoku
             }
             return count;
         }
+
         /// <summary>
         /// GetEmptyCells method to get the empty cells.
         /// </summary>
@@ -214,6 +230,7 @@ namespace guy_s_sudoku
             }
             return emptyCells.OrderBy(cell => CountSetBits(Tiles[cell.Item1, cell.Item2].PossibleValuesBitmask)).ToList();
         }
+
         /// <summary>
         ///     UpdateConstraints method to update the constraints for a given value at a given position.
         /// </summary>
@@ -250,6 +267,7 @@ namespace guy_s_sudoku
                 }
             }
         }
+
         /// <summary>
         /// GetPossibleValues method to get the possible values for a given position.
         /// </summary>
@@ -269,6 +287,7 @@ namespace guy_s_sudoku
 
             return possibleValues;
         }
+
         /// <summary>
         /// HasDuplicate method to check if there is a duplicate in a row or column.
         /// </summary>
@@ -287,6 +306,7 @@ namespace guy_s_sudoku
             }
             return false;
         }
+
         /// <summary>
         ///    HasDuplicateInBlock method to check if there is a duplicate in a block.
         /// </summary>
@@ -308,6 +328,7 @@ namespace guy_s_sudoku
             }
             return false;
         }
+
         /// <summary>
         ///     CountSetBits method to count the set bits in a given bitmask.
         /// </summary>
@@ -323,6 +344,7 @@ namespace guy_s_sudoku
             }
             return count;
         }
+
         /// <summary>
         /// LogState method to log the state of the board.
         /// </summary>
@@ -341,6 +363,7 @@ namespace guy_s_sudoku
             }
             Console.WriteLine();
         }
+
         /// <summary>
         /// PrintBoard method to print the board.
         /// </summary>
@@ -356,6 +379,7 @@ namespace guy_s_sudoku
                 Console.WriteLine();
             }
         }
+
         /// <summary>
         /// BacktrackSolve method to solve the puzzle using backtracking.
         /// </summary>
@@ -419,6 +443,7 @@ namespace guy_s_sudoku
             }
             return true;
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -435,6 +460,7 @@ namespace guy_s_sudoku
             }
             return false;
         }
+
         /// <summary>
         /// CountConstraints method to count the constraints for a given value at a given position.
         /// </summary>
