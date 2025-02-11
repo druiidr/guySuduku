@@ -33,7 +33,7 @@ namespace guy_s_sudoku
         {
             bool progress;
             int iterations = 0;
-            const int maxIterations = 200;
+            const int maxIterations = 10000;
 
             do
             {
@@ -101,6 +101,7 @@ namespace guy_s_sudoku
         /// ApplyNakedSingles method to apply naked singles.
         /// </summary>
         /// <returns></returns>
+
         private int GetAdaptiveThreshold()
         {
             // Set adaptive threshold based on board size

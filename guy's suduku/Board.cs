@@ -12,28 +12,18 @@ namespace guy_s_sudoku
         private int BlockSize { get; }
         private Heuristic Heuristic { get; }
         public bool DebugMode { get; }
-        /// <summary>
-        /// Board constructor to initialize the board.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <param name="size"></param>
-        /// <param name="debugMode"></param>
-        /// <exception cref="ArgumentException"></exception>
+        private Stopwatch profiler = new Stopwatch();
+        private int maxBacktrackDepth = 0;
+        private Dictionary<int, int> backtrackDepthCounts = new Dictionary<int, int>();
+
         public Board(string input, int size, bool debugMode = false)
         {
-            if (input.Length != size * size)
-                throw new ArgumentException("Input length does not match the expected size.");
-
             Size = size;
             BlockSize = (int)Math.Sqrt(Size);
             Tiles = new Tile[size, size];
             DebugMode = debugMode;
-            Heuristic = new Heuristic(Tiles, Size, this); // Pass Board instance to Heuristic
-
+            Heuristic = new Heuristic(Tiles, Size, this);
             InitializeBoard(input);
-
-            if (!IsValidInput())
-                throw new ArgumentException("The provided Sudoku puzzle contains invalid or conflicting entries.");
         }
         /// <summary>
         /// IsValidInput method to check if the input is valid.
@@ -73,13 +63,13 @@ namespace guy_s_sudoku
                     if (input[index] != '0')
                     {
                         Tiles[row, col].Value = input[index];
-                        UpdateConstraints(row, col, input[index], false);
                     }
                     index++;
                 }
             }
 
-            // Ensure all possible values are correctly identified
+            PropagateInitialConstraints(); // Ensure constraints are uniformly propagated from all initial values
+
             for (int row = 0; row < Size; row++)
             {
                 for (int col = 0; col < Size; col++)
@@ -93,6 +83,33 @@ namespace guy_s_sudoku
 
             if (DebugMode) LogState("Initial Board Setup:");
         }
+
+        /// <summary>
+        /// Propagate constraints from initial values.
+        /// </summary>
+        private void PropagateInitialConstraints()
+        {
+            bool changed;
+            do
+            {
+                changed = false;
+                for (int row = 0; row < Size; row++)
+                {
+                    for (int col = 0; col < Size; col++)
+                    {
+                        if (Tiles[row, col].Value == '0' && CountSetBits(Tiles[row, col].PossibleValuesBitmask) == 1)
+                        {
+                            char forcedValue = GetPossibleValues(row, col).First();
+                            Tiles[row, col].Value = forcedValue;
+                            UpdateConstraints(row, col, forcedValue, false);
+                            changed = true;
+                        }
+                    }
+                }
+            } while (changed);
+        }
+
+
         /// <summary>
         /// UpdatePossibleValues method to update the possible values for a given position.
         /// </summary>
@@ -129,49 +146,22 @@ namespace guy_s_sudoku
         /// <returns></returns>
         public bool Solve()
         {
-            var watch = Stopwatch.StartNew();
-            const long timeout = 5000;  // 5 seconds timeout
+            profiler.Restart();
+            maxBacktrackDepth = 0;
+            backtrackDepthCounts.Clear();
+            PropagateInitialConstraints();
+            var emptyCells = GetEmptyCells();
+            emptyCells = emptyCells.OrderBy(cell => CountSetBits(Tiles[cell.Item1, cell.Item2].PossibleValuesBitmask))
+                                   .ThenBy(cell => CountConstraints(cell.Item1, cell.Item2, Tiles[cell.Item1, cell.Item2].Value))
+                                   .ToList();
 
-            if (DebugMode) LogState("Initial Board Setup:");
+            Console.WriteLine($"Starting Solve - Empty Cells: {emptyCells.Count}");
+            bool result = BacktrackSolve(emptyCells, 0);
+            profiler.Stop();
 
-            bool progress;
-            int iteration = 0;
-            const int maxIterations = 200;  // Limit the number of heuristic iterations
-
-            do
-            {
-                progress = Heuristic.ApplyAll();
-                if (DebugMode && progress) LogState($"After Applying Heuristics (Iteration {iteration}):");
-
-                iteration++;
-                if (iteration >= maxIterations)
-                {
-                    Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
-                    LogState("Final State before Exiting:");
-                    return false;
-                }
-
-                if (watch.ElapsedMilliseconds > timeout)
-                {
-                    Console.WriteLine("Solver timed out.");
-                    LogState("Final State before Timeout:");
-                    return false;
-                }
-            } while (progress && !IsSolved());
-
-            if (IsSolved())
-            {
-                LogState("Solved Sudoku:");
-                return true;
-            }
-            else
-            {
-                LogState("Before Backtracking:");
-                var emptyCells = GetEmptyCells();
-                bool result = BacktrackSolve(emptyCells, 0);
-                LogState(result ? "Solved Sudoku:" : "No solution exists.");
-                return result;
-            }
+            Console.WriteLine($"Solve Complete: {result} in {profiler.ElapsedMilliseconds}ms");
+            Console.WriteLine($"Max Backtracking Depth: {maxBacktrackDepth}");
+            return result;
         }
         /// <summary>
         /// IsSolved method to check if the puzzle is solved.
@@ -372,47 +362,35 @@ namespace guy_s_sudoku
         /// <param name="emptyCells"></param>
         /// <param name="depth"></param>
         /// <returns></returns>
-        public bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
+        private bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
         {
             if (depth >= emptyCells.Count)
-            {
-                return IsSolved();
-            }
+                return true;
+
+            if (depth > maxBacktrackDepth)
+                maxBacktrackDepth = depth;
 
             var (row, col) = emptyCells[depth];
-            var possibleValues = GetPossibleValues(row, col);
+            var possibleValues = GetPossibleValues(row, col).OrderBy(value => CountConstraints(row, col, value)).ToList();
 
-            // Sort possible values by the least constraining value heuristic
-            possibleValues = possibleValues.OrderBy(value => CountConstraints(row, col, value)).ToList();
-
-            var watch = Stopwatch.StartNew();
             foreach (var value in possibleValues)
             {
                 if (Heuristic.IsValidMove(row, col, value))
                 {
                     Tiles[row, col].Value = value;
                     UpdateConstraints(row, col, value, false);
-
-                    if (ForwardCheck(row, col))
+                    if (ForwardCheck(row, col) && !HasEmptyDomain())
                     {
                         if (BacktrackSolve(emptyCells, depth + 1))
-                        {
                             return true;
-                        }
                     }
-
-                    // Undo move
                     Tiles[row, col].Value = '0';
                     UpdateConstraints(row, col, value, true);
                 }
             }
-            watch.Stop();
-            if (DebugMode)
-            {
-                Console.WriteLine($"Backtracking Time at depth {depth}: {watch.ElapsedMilliseconds} ms");
-            }
             return false;
         }
+
         /// <summary>
         /// ForwardCheck method to check if the move is valid.
         /// </summary>
@@ -423,25 +401,39 @@ namespace guy_s_sudoku
         {
             for (int i = 0; i < Size; i++)
             {
-                if (Tiles[row, i].Value == '0' && Tiles[row, i].PossibleValuesBitmask == 0)
+                if (Tiles[row, i].Value == '0' && CountSetBits(Tiles[row, i].PossibleValuesBitmask) == 0)
                     return false;
-                if (Tiles[i, col].Value == '0' && Tiles[i, col].PossibleValuesBitmask == 0)
+                if (Tiles[i, col].Value == '0' && CountSetBits(Tiles[i, col].PossibleValuesBitmask) == 0)
                     return false;
             }
 
             int startRow = (row / BlockSize) * BlockSize;
             int startCol = (col / BlockSize) * BlockSize;
-
             for (int r = 0; r < BlockSize; r++)
             {
                 for (int c = 0; c < BlockSize; c++)
                 {
-                    if (Tiles[startRow + r, startCol + c].Value == '0' && Tiles[startRow + r, startCol + c].PossibleValuesBitmask == 0)
+                    if (Tiles[startRow + r, startCol + c].Value == '0' && CountSetBits(Tiles[startRow + r, startCol + c].PossibleValuesBitmask) == 0)
                         return false;
                 }
             }
-
             return true;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private bool HasEmptyDomain()
+        {
+            for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    if (Tiles[row, col].Value == '0' && CountSetBits(Tiles[row, col].PossibleValuesBitmask) == 0)
+                        return true;
+                }
+            }
+            return false;
         }
         /// <summary>
         /// CountConstraints method to count the constraints for a given value at a given position.
