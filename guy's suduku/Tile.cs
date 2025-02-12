@@ -22,7 +22,7 @@ namespace guy_s_sudoku
         /// <summary>
         ///  Sets the value of the tile.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true if has 1 possible value</returns>
         public bool IsSingleValue()
         {
             return CountSetBits(PossibleValuesBitmask) == 1;
@@ -32,7 +32,7 @@ namespace guy_s_sudoku
         /// Counts the number of set bits in the bitmask.
         /// </summary>
         /// <param name="bitmask"></param>
-        /// <returns></returns>
+        /// <returns>int: the count of set bits</returns>
         private int CountSetBits(long bitmask)
         {
             return BitOperations.PopCount((ulong)bitmask);

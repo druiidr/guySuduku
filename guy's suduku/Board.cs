@@ -5,6 +5,13 @@ using System.Linq;
 
 namespace guy_s_sudoku
 {
+    /// <summary>
+    /// Board constructor to initialize the board.
+    /// </summary>
+    /// <param name="input">The input string representing the Sudoku puzzle.</param>
+    /// <param name="size">The size of the Sudoku board.</param>
+    /// <param name="debugMode">Indicates whether debug mode is enabled.</param>
+    /// <exception cref="ArgumentException">Thrown when the input length does not match the expected size or is not a perfect fourth power.</exception>
     public class Board
     {
         private Tile[,] Tiles { get; }
@@ -45,7 +52,7 @@ namespace guy_s_sudoku
         /// <summary>
         /// IsValidInput method to check if the input is valid.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true if input is valid, false otherwise</returns>
         public bool IsValidInput()
         {
             for (int row = 0; row < Size; row++)
@@ -136,7 +143,7 @@ namespace guy_s_sudoku
         /// <summary>
         /// Solve method to solve the puzzle.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if the puzzle is solved, otherwise false.</returns>
         public bool Solve()
         {
             profiler.Restart();
@@ -180,7 +187,7 @@ namespace guy_s_sudoku
         /// <summary>
         /// IsSolved method to check if the puzzle is solved.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if the puzzle is solved, otherwise false.</return
         public bool IsSolved()
         {
             for (int row = 0; row < Size; row++)
@@ -196,7 +203,7 @@ namespace guy_s_sudoku
         /// <summary>
         /// CountEmptyCells method to count the empty cells.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The number of empty cells.</returns>
         public int CountEmptyCells()
         {
             int count = 0;
@@ -213,10 +220,11 @@ namespace guy_s_sudoku
             return count;
         }
 
+
         /// <summary>
         /// GetEmptyCells method to get the empty cells.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A list of tuples representing the empty cells.</returns>
         public List<Tuple<int, int>> GetEmptyCells()
         {
             var emptyCells = new List<Tuple<int, int>>();
@@ -271,9 +279,9 @@ namespace guy_s_sudoku
         /// <summary>
         /// GetPossibleValues method to get the possible values for a given position.
         /// </summary>
-        /// <param name="row"></param>
-        /// <param name="col"></param>
-        /// <returns></returns>
+        /// <param name="row">The row index.</param>
+        /// <param name="col">The column index.</param>
+        /// <returns>A list of possible values for the given position.</returns>
         public List<char> GetPossibleValues(int row, int col)
         {
             var possibleValues = new List<char>();
@@ -291,10 +299,10 @@ namespace guy_s_sudoku
         /// <summary>
         /// HasDuplicate method to check if there is a duplicate in a row or column.
         /// </summary>
-        /// <param name="tiles"></param>
-        /// <param name="index"></param>
-        /// <param name="isRow"></param>
-        /// <returns></returns>
+        /// <param name="tiles">The tiles of the board.</param>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="isRow">True if checking a row, otherwise false.</param>
+        /// <returns>True if there is a duplicate, otherwise false.</returns>
         private bool HasDuplicate(Tile[,] tiles, int index, bool isRow)
         {
             var values = new HashSet<char>();
@@ -313,7 +321,7 @@ namespace guy_s_sudoku
         /// <param name="tiles"></param>
         /// <param name="startRow"></param>
         /// <param name="startCol"></param>
-        /// <returns></returns>
+        /// <returns>True if there is a duplicate in the block, otherwise false.</returns>
         private bool HasDuplicateInBlock(Tile[,] tiles, int startRow, int startCol)
         {
             var values = new HashSet<char>();
@@ -333,7 +341,7 @@ namespace guy_s_sudoku
         ///     CountSetBits method to count the set bits in a given bitmask.
         /// </summary>
         /// <param name="bitMask"></param>
-        /// <returns></returns>
+        /// <returns>The number of set bits in the bitmask.</returns>
         public int CountSetBits(long bitMask)
         {
             int count = 0;
@@ -385,7 +393,7 @@ namespace guy_s_sudoku
         /// </summary>
         /// <param name="emptyCells"></param>
         /// <param name="depth"></param>
-        /// <returns></returns>
+        /// <returns>True if the puzzle is solved, otherwise false.</returns>
         private bool BacktrackSolve(List<Tuple<int, int>> emptyCells, int depth)
         {
             if (depth >= emptyCells.Count)
@@ -420,7 +428,7 @@ namespace guy_s_sudoku
         /// </summary>
         /// <param name="row"></param>
         /// <param name="col"></param>
-        /// <returns></returns>
+        /// <returns>True if the move is valid, otherwise false.</returns>
         private bool ForwardCheck(int row, int col)
         {
             for (int i = 0; i < Size; i++)
@@ -444,10 +452,11 @@ namespace guy_s_sudoku
             return true;
         }
 
+
         /// <summary>
-        /// 
+        /// HasEmptyDomain method to check if there is an empty domain.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if there is an empty domain, otherwise false.</returns>
         private bool HasEmptyDomain()
         {
             for (int row = 0; row < Size; row++)
@@ -467,7 +476,7 @@ namespace guy_s_sudoku
         /// <param name="row"></param>
         /// <param name="col"></param>
         /// <param name="value"></param>
-        /// <returns></returns>
+        /// <returns> the number of constraints found</returns>
         private int CountConstraints(int row, int col, char value)
         {
             int constraints = 0;

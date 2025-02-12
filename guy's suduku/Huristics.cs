@@ -7,8 +7,10 @@ namespace guy_s_sudoku
 {
     internal class Heuristic
     {
-        const int maxIterations = 10000;
-        const double AcceptedEmptySpacePercentage = .7;
+        private const int MaxIterations = 10000;
+        private const double AcceptedEmptySpacePercentage = 0.7;
+        private const int SmallBoardSideSize = 4;
+        private const int MediumBoardSideSize = 9;
         private readonly Tile[,] Tiles;
         private readonly int Size;
         private readonly int BlockSize;
@@ -17,9 +19,9 @@ namespace guy_s_sudoku
         /// <summary>
         /// Heuristic constructor to initialize the tiles, size and board.
         /// </summary>
-        /// <param name="tiles"></param>
-        /// <param name="size"></param>
-        /// <param name="board"></param>
+        /// <param name="tiles">The tiles of the board.</param>
+        /// <param name="size">The size of the board.</param>
+        /// <param name="board">The board instance.</param>
         public Heuristic(Tile[,] tiles, int size, Board board)
         {
             Tiles = tiles;
@@ -27,15 +29,15 @@ namespace guy_s_sudoku
             BlockSize = (int)Math.Sqrt(size);
             this.board = board; // Initialize Board reference
         }
+
         /// <summary>
-        /// apply all the heuristics.
+        /// Apply all the heuristics.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyAll()
         {
             bool progress;
             int iterations = 0;
-           
 
             do
             {
@@ -48,7 +50,7 @@ namespace guy_s_sudoku
                     board.PrintBoard(); // Print board state after each iteration
                 }
 
-                if (iterations > maxIterations)
+                if (iterations > MaxIterations)
                 {
                     Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
                     break;
@@ -58,10 +60,11 @@ namespace guy_s_sudoku
 
             return progress;
         }
+
         /// <summary>
-        /// ApplyHeuristics method to apply heuristics.
+        /// Apply heuristics based on the current state of the board.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if progress was made, otherwise false.</returns>
         private bool ApplyHeuristics()
         {
             bool progress = false;
@@ -69,11 +72,11 @@ namespace guy_s_sudoku
 
             // Apply heuristics based on the current state of the board
             var watch = Stopwatch.StartNew();
-            if (emptyCellsCount > Size * Size * AcceptedEmptySpacePercentage) // More than 70% empty
+            if (emptyCellsCount > Size * Size * AcceptedEmptySpacePercentage) // Mostly empty board
             {
                 progress |= ApplyHiddenSets() || ApplyNakedSets(); // Apply more complex heuristics first
             }
-            else if (emptyCellsCount < Size * Size * 1-AcceptedEmptySpacePercentage) // Less than 30% empty
+            else if (emptyCellsCount < Size * Size * (1 - AcceptedEmptySpacePercentage)) // mostly full board
             {
                 progress |= ApplyNakedSingles() || ApplyHiddenSingles(); // Apply simpler heuristics first
             }
@@ -99,22 +102,11 @@ namespace guy_s_sudoku
 
             return progress;
         }
-        /// <summary>
-        /// ApplyNakedSingles method to apply naked singles.
-        /// </summary>
-        /// <returns></returns>
 
-        private int GetAdaptiveThreshold()
-        {
-            // Set adaptive threshold based on board size
-            if (Size <= 4) return 5; // Smaller boards
-            if (Size <= 9) return 20; // Medium boards
-            return 30; // Larger boards
-        }
         /// <summary>
-        /// applies naked singles
+        /// Apply naked singles heuristic.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyNakedSingles()
         {
             bool progress = false;
@@ -141,20 +133,22 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+
         /// <summary>
-        /// isolates the single value from the bitmask.
+        /// Isolate the single value from the bitmask.
         /// </summary>
-        /// <param name="bitmask"></param>
-        /// <returns></returns>
+        /// <param name="bitmask">The bitmask representing possible values.</param>
+        /// <returns>The isolated single value.</returns>
         private char GetSingleValue(long bitmask)
         {
             int value = (int)Math.Log2(bitmask);
             return (char)('0' + value);
         }
+
         /// <summary>
-        /// applies hidden singles
+        /// Apply hidden singles heuristic.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyHiddenSingles()
         {
             bool progress = false;
@@ -179,13 +173,14 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+
         /// <summary>
-        /// finds hidden single in the box.
+        /// Find hidden single in the box.
         /// </summary>
-        /// <param name="boxRow"></param>
-        /// <param name="boxCol"></param>
-        /// <param name="bitMask"></param>
-        /// <returns></returns>
+        /// <param name="boxRow">The row index of the box.</param>
+        /// <param name="boxCol">The column index of the box.</param>
+        /// <param name="bitMask">The bitmask representing possible values.</param>
+        /// <returns>True if a hidden single was found, otherwise false.</returns>
         private bool FindHiddenSingleInBox(int boxRow, int boxCol, long bitMask)
         {
             int startRow = boxRow * BlockSize;
@@ -218,13 +213,14 @@ namespace guy_s_sudoku
             }
             return false;
         }
+
         /// <summary>
-        /// FindHiddenSingle method to find hidden
+        /// Find hidden single in the row or column.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="bitMask"></param>
-        /// <param name="isRow"></param>
-        /// <returns></returns>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="bitMask">The bitmask representing possible values.</param>
+        /// <param name="isRow">True if searching in a row, otherwise false.</param>
+        /// <returns>True if a hidden single was found, otherwise false.</returns>
         private bool FindHiddenSingle(int index, long bitMask, bool isRow)
         {
             int pos = -1, count = 0;
@@ -249,11 +245,12 @@ namespace guy_s_sudoku
                 }
             }
             return false;
-        }/// <summary>
-         ///  ApplyNakedSets method to apply naked sets.
-         /// </summary>
-         /// <returns></returns>
+        }
 
+        /// <summary>
+        /// Apply naked sets heuristic.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyNakedSets()
         {
             bool progress = false;
@@ -268,14 +265,15 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+
         /// <summary>
-        /// finds naked sets according to the given parameters.
+        /// Find naked sets according to the given parameters.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="setSize"></param>
-        /// <param name="isRow"></param>
-        /// <param name="isBox"></param>
-        /// <returns></returns>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="setSize">The size of the set.</param>
+        /// <param name="isRow">True if searching in a row, otherwise false.</param>
+        /// <param name="isBox">True if searching in a box, otherwise false.</param>
+        /// <returns>A list of naked sets.</returns>
         private List<(int, int, long)> FindNakedSets(int index, int setSize, bool isRow, bool isBox)
         {
             var nakedSets = new List<(int, int, long)>();
@@ -311,11 +309,12 @@ namespace guy_s_sudoku
 
             return nakedSets;
         }
+
         /// <summary>
-        /// EliminateNakedSets method to eliminate naked sets.
+        /// Eliminate naked sets.
         /// </summary>
-        /// <param name="candidates"></param>
-        /// <returns></returns>
+        /// <param name="candidates">The list of candidates.</param>
+        /// <returns>True if progress was made, otherwise false.</returns>
         private bool EliminateNakedSets(List<(int, int, long)> candidates)
         {
             var groups = candidates.GroupBy(c => c.Item3).Where(g => g.Count() == board.CountSetBits(g.Key));
@@ -331,10 +330,11 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+
         /// <summary>
-        /// ApplyHiddenSets method to apply hidden sets.
+        /// Apply hidden sets heuristic.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyHiddenSets()
         {
             bool progress = false;
@@ -349,14 +349,15 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+
         /// <summary>
-        /// FindHiddenSets method to find hidden sets.
+        /// Find hidden sets according to the given parameters.
         /// </summary>
-        /// <param name="index"></param>
-        /// <param name="setSize"></param>
-        /// <param name="isRow"></param>
-        /// <param name="isBox"></param>
-        /// <returns></returns>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="setSize">The size of the set.</param>
+        /// <param name="isRow">True if searching in a row, otherwise false.</param>
+        /// <param name="isBox">True if searching in a box, otherwise false.</param>
+        /// <returns>A list of hidden sets.</returns>
         private List<(int, int, long)> FindHiddenSets(int index, int setSize, bool isRow, bool isBox)
         {
             var hiddenSets = new List<(int, int, long)>();
@@ -392,11 +393,12 @@ namespace guy_s_sudoku
 
             return hiddenSets;
         }
+
         /// <summary>
-        /// EliminateHiddenSets method to eliminate hidden sets.
+        /// Eliminate hidden sets.
         /// </summary>
-        /// <param name="candidates"></param>
-        /// <returns></returns>
+        /// <param name="candidates">The list of candidates.</param>
+        /// <returns>True if progress was made, otherwise false.</returns>
         private bool EliminateHiddenSets(List<(int, int, long)> candidates)
         {
             var candidateBitmasks = candidates.Select(c => c.Item3).ToList();
@@ -420,10 +422,11 @@ namespace guy_s_sudoku
 
             return progress;
         }
+
         /// <summary>
-        /// ApplySimplePairs method to apply simple pairs.
+        /// Apply simple pairs heuristic.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplySimplePairs()
         {
             bool progress = false;
@@ -449,11 +452,12 @@ namespace guy_s_sudoku
             }
             return progress;
         }
+
         /// <summary>
-        /// GetPossibleValues method to get the possible values from the bitmask.
+        /// Get the possible values from the bitmask.
         /// </summary>
-        /// <param name="bitmask"></param>
-        /// <returns></returns>
+        /// <param name="bitmask">The bitmask representing possible values.</param>
+        /// <returns>An enumerable of possible values.</returns>
         private IEnumerable<char> GetPossibleValues(long bitmask)
         {
             return Enumerable.Range(1, Size)
@@ -461,6 +465,13 @@ namespace guy_s_sudoku
                 .Select(i => (char)('0' + i));
         }
 
+        /// <summary>
+        /// Check if the move is valid.
+        /// </summary>
+        /// <param name="row">The row index.</param>
+        /// <param name="col">The column index.</param>
+        /// <param name="value">The value to be placed.</param>
+        /// <returns>True if the move is valid, otherwise false.</returns>
         public bool IsValidMove(int row, int col, char value)
         {
             Tiles[row, col].Value = value;

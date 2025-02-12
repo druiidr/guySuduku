@@ -9,8 +9,10 @@ namespace TestinSudoku
     [TestFixture]
     public class SudokuTests
     {
-        private const string TestingPuzzlesPath = "SudokuTests/TestingPuzzles";
-
+        private static readonly string TestingPuzzlesPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TestinSudoku", "TestingPuzzles");
+        /// <summary>
+        /// run the tests from the testPuzzles file
+        /// </summary>
         [Test]
         public void RunTestingPuzzles()
         {
