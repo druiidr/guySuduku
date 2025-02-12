@@ -386,6 +386,15 @@ namespace guy_s_sudoku
                 }
                 Console.WriteLine();
             }
+             Console.WriteLine();
+             for (int row = 0; row < Size; row++)
+            {
+                for (int col = 0; col < Size; col++)
+                {
+                    Console.Write($"Tiles[row, col].Value");
+                }
+
+            }
         }
 
         /// <summary>
