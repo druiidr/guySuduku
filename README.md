@@ -17,7 +17,7 @@ Guy's Sudoku Solver is a powerful C# application designed to efficiently solve S
 bash
 Copy
 Edit
-git clone https://github.com/yourusername/guys-sudoku-solver.git
+git clone https://github.com/druiidr/guys_sudoku_solver.git
 cd guys-sudoku-solver
 
 2️⃣ Open in Visual Studio 2022
@@ -110,6 +110,3 @@ Represents a single tile on the board, storing values and possible candidates
 ## License
 
 This project is open-source under the MIT License.
-
-## Contributions
-Contributions are welcome! Feel free to submit issues, feature requests, or pull requests.
