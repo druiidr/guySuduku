@@ -1,16 +1,27 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace guy_s_sudoku
 {
     internal class Heuristic
     {
+        private const int MaxIterations = 10000;
+        private const double AcceptedEmptySpacePercentage = 0.7;
+        private const int SmallBoardSideSize = 4;
+        private const int MediumBoardSideSize = 9;
         private readonly Tile[,] Tiles;
         private readonly int Size;
         private readonly int BlockSize;
         private readonly Board board; // Reference to Board class
 
+        /// <summary>
+        /// Heuristic constructor to initialize the tiles, size and board.
+        /// </summary>
+        /// <param name="tiles">The tiles of the board.</param>
+        /// <param name="size">The size of the board.</param>
+        /// <param name="board">The board instance.</param>
         public Heuristic(Tile[,] tiles, int size, Board board)
         {
             Tiles = tiles;
@@ -19,11 +30,14 @@ namespace guy_s_sudoku
             this.board = board; // Initialize Board reference
         }
 
+        /// <summary>
+        /// Apply all the heuristics.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyAll()
         {
             bool progress;
             int iterations = 0;
-            const int maxIterations = 100000;
 
             do
             {
@@ -36,7 +50,7 @@ namespace guy_s_sudoku
                     board.PrintBoard(); // Print board state after each iteration
                 }
 
-                if (iterations > maxIterations)
+                if (iterations > MaxIterations)
                 {
                     Console.WriteLine("Maximum iterations reached. Exiting to prevent infinite loop.");
                     break;
@@ -47,55 +61,52 @@ namespace guy_s_sudoku
             return progress;
         }
 
-
+        /// <summary>
+        /// Apply heuristics based on the current state of the board.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         private bool ApplyHeuristics()
         {
             bool progress = false;
+            int emptyCellsCount = board.CountEmptyCells();
 
-            // Apply Naked Singles first as they are the simplest and most effective
-            progress = ApplyNakedSingles();
-
+            // Apply heuristics based on the current state of the board
+            var watch = Stopwatch.StartNew();
+            if (emptyCellsCount > Size * Size * AcceptedEmptySpacePercentage) // Mostly empty board
+            {
+                progress |= ApplyHiddenSets() || ApplyNakedSets(); // Apply more complex heuristics first
+            }
+            else if (emptyCellsCount < Size * Size * (1 - AcceptedEmptySpacePercentage)) // mostly full board
+            {
+                progress |= ApplyNakedSingles() || ApplyHiddenSingles(); // Apply simpler heuristics first
+            }
+            else
+            {
+                progress |= ApplyNakedSingles() || ApplyHiddenSingles() || ApplyNakedSets() || ApplyHiddenSets();
+            }
+            watch.Stop();
             if (board.DebugMode)
             {
-                Console.WriteLine("After applying Naked Singles:");
-                board.PrintBoard();
+                Console.WriteLine($"Heuristics Time: {watch.ElapsedMilliseconds} ms");
+                if (progress) board.PrintBoard();
             }
 
-            // Apply Hidden Singles if Naked Singles did not make much progress
-            if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
+            watch.Restart();
+            progress |= ApplySimplePairs();
+            watch.Stop();
+            if (board.DebugMode)
             {
-                progress |= ApplyHiddenSingles();
-
-                if (board.DebugMode)
-                {
-                    Console.WriteLine("After applying Hidden Singles:");
-                    board.PrintBoard();
-                }
-            }
-
-            // Apply Naked Sets and Simple Pairs if the board is still not solved
-            if (!progress || board.CountEmptyCells() < GetAdaptiveThreshold())
-            {
-                progress |= ApplyNakedSets() || ApplySimplePairs();
-
-                if (board.DebugMode)
-                {
-                    Console.WriteLine("After applying Naked Sets and Simple Pairs:");
-                    board.PrintBoard();
-                }
+                Console.WriteLine($"Simple Pairs Time: {watch.ElapsedMilliseconds} ms");
+                if (progress) board.PrintBoard();
             }
 
             return progress;
         }
 
-        private int GetAdaptiveThreshold()
-        {
-            // Set adaptive threshold based on board size
-            if (Size <= 4) return 5; // Smaller boards
-            if (Size <= 9) return 20; // Medium boards
-            return 30; // Larger boards
-        }
-
+        /// <summary>
+        /// Apply naked singles heuristic.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyNakedSingles()
         {
             bool progress = false;
@@ -123,13 +134,21 @@ namespace guy_s_sudoku
             return progress;
         }
 
-
+        /// <summary>
+        /// Isolate the single value from the bitmask.
+        /// </summary>
+        /// <param name="bitmask">The bitmask representing possible values.</param>
+        /// <returns>The isolated single value.</returns>
         private char GetSingleValue(long bitmask)
         {
             int value = (int)Math.Log2(bitmask);
             return (char)('0' + value);
         }
 
+        /// <summary>
+        /// Apply hidden singles heuristic.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyHiddenSingles()
         {
             bool progress = false;
@@ -155,6 +174,13 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /// <summary>
+        /// Find hidden single in the box.
+        /// </summary>
+        /// <param name="boxRow">The row index of the box.</param>
+        /// <param name="boxCol">The column index of the box.</param>
+        /// <param name="bitMask">The bitmask representing possible values.</param>
+        /// <returns>True if a hidden single was found, otherwise false.</returns>
         private bool FindHiddenSingleInBox(int boxRow, int boxCol, long bitMask)
         {
             int startRow = boxRow * BlockSize;
@@ -188,6 +214,13 @@ namespace guy_s_sudoku
             return false;
         }
 
+        /// <summary>
+        /// Find hidden single in the row or column.
+        /// </summary>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="bitMask">The bitmask representing possible values.</param>
+        /// <param name="isRow">True if searching in a row, otherwise false.</param>
+        /// <returns>True if a hidden single was found, otherwise false.</returns>
         private bool FindHiddenSingle(int index, long bitMask, bool isRow)
         {
             int pos = -1, count = 0;
@@ -214,7 +247,10 @@ namespace guy_s_sudoku
             return false;
         }
 
-
+        /// <summary>
+        /// Apply naked sets heuristic.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplyNakedSets()
         {
             bool progress = false;
@@ -230,6 +266,14 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /// <summary>
+        /// Find naked sets according to the given parameters.
+        /// </summary>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="setSize">The size of the set.</param>
+        /// <param name="isRow">True if searching in a row, otherwise false.</param>
+        /// <param name="isBox">True if searching in a box, otherwise false.</param>
+        /// <returns>A list of naked sets.</returns>
         private List<(int, int, long)> FindNakedSets(int index, int setSize, bool isRow, bool isBox)
         {
             var nakedSets = new List<(int, int, long)>();
@@ -266,6 +310,11 @@ namespace guy_s_sudoku
             return nakedSets;
         }
 
+        /// <summary>
+        /// Eliminate naked sets.
+        /// </summary>
+        /// <param name="candidates">The list of candidates.</param>
+        /// <returns>True if progress was made, otherwise false.</returns>
         private bool EliminateNakedSets(List<(int, int, long)> candidates)
         {
             var groups = candidates.GroupBy(c => c.Item3).Where(g => g.Count() == board.CountSetBits(g.Key));
@@ -282,6 +331,102 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /// <summary>
+        /// Apply hidden sets heuristic.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
+        public bool ApplyHiddenSets()
+        {
+            bool progress = false;
+            for (int setSize = 2; setSize <= BlockSize; setSize++)
+            {
+                for (int i = 0; i < Size; i++)
+                {
+                    progress |= EliminateHiddenSets(FindHiddenSets(i, setSize, true, false)) ||
+                                EliminateHiddenSets(FindHiddenSets(i, setSize, false, false)) ||
+                                EliminateHiddenSets(FindHiddenSets(i, setSize, false, true));
+                }
+            }
+            return progress;
+        }
+
+        /// <summary>
+        /// Find hidden sets according to the given parameters.
+        /// </summary>
+        /// <param name="index">The index of the row or column.</param>
+        /// <param name="setSize">The size of the set.</param>
+        /// <param name="isRow">True if searching in a row, otherwise false.</param>
+        /// <param name="isBox">True if searching in a box, otherwise false.</param>
+        /// <returns>A list of hidden sets.</returns>
+        private List<(int, int, long)> FindHiddenSets(int index, int setSize, bool isRow, bool isBox)
+        {
+            var hiddenSets = new List<(int, int, long)>();
+
+            if (isBox)
+            {
+                int startRow = (index / BlockSize) * BlockSize, startCol = (index % BlockSize) * BlockSize;
+                for (int i = 0; i < BlockSize; i++)
+                {
+                    for (int j = 0; j < BlockSize; j++)
+                    {
+                        int row = startRow + i, col = startCol + j;
+                        var bitmask = Tiles[row, col].PossibleValuesBitmask;
+                        if (Tiles[row, col].Value == '0')
+                        {
+                            hiddenSets.Add((row, col, bitmask));
+                        }
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Size; i++)
+                {
+                    int row = isRow ? index : i, col = isRow ? i : index;
+                    var bitmask = Tiles[row, col].PossibleValuesBitmask;
+                    if (Tiles[row, col].Value == '0')
+                    {
+                        hiddenSets.Add((row, col, bitmask));
+                    }
+                }
+            }
+
+            return hiddenSets;
+        }
+
+        /// <summary>
+        /// Eliminate hidden sets.
+        /// </summary>
+        /// <param name="candidates">The list of candidates.</param>
+        /// <returns>True if progress was made, otherwise false.</returns>
+        private bool EliminateHiddenSets(List<(int, int, long)> candidates)
+        {
+            var candidateBitmasks = candidates.Select(c => c.Item3).ToList();
+            bool progress = false;
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                var (row1, col1, bitmask1) = candidates[i];
+                for (int j = i + 1; j < candidates.Count; j++)
+                {
+                    var (row2, col2, bitmask2) = candidates[j];
+                    long combinedMask = bitmask1 | bitmask2;
+                    if (board.CountSetBits(combinedMask) == 2 && candidateBitmasks.Count(bm => (bm & combinedMask) != 0) == 2)
+                    {
+                        Tiles[row1, col1].PossibleValuesBitmask &= combinedMask;
+                        Tiles[row2, col2].PossibleValuesBitmask &= combinedMask;
+                        progress = true;
+                    }
+                }
+            }
+
+            return progress;
+        }
+
+        /// <summary>
+        /// Apply simple pairs heuristic.
+        /// </summary>
+        /// <returns>True if progress was made, otherwise false.</returns>
         public bool ApplySimplePairs()
         {
             bool progress = false;
@@ -308,6 +453,11 @@ namespace guy_s_sudoku
             return progress;
         }
 
+        /// <summary>
+        /// Get the possible values from the bitmask.
+        /// </summary>
+        /// <param name="bitmask">The bitmask representing possible values.</param>
+        /// <returns>An enumerable of possible values.</returns>
         private IEnumerable<char> GetPossibleValues(long bitmask)
         {
             return Enumerable.Range(1, Size)
@@ -315,10 +465,17 @@ namespace guy_s_sudoku
                 .Select(i => (char)('0' + i));
         }
 
+        /// <summary>
+        /// Check if the move is valid.
+        /// </summary>
+        /// <param name="row">The row index.</param>
+        /// <param name="col">The column index.</param>
+        /// <param name="value">The value to be placed.</param>
+        /// <returns>True if the move is valid, otherwise false.</returns>
         public bool IsValidMove(int row, int col, char value)
         {
             Tiles[row, col].Value = value;
-            bool isValid = board.IsValid();
+            bool isValid = board.IsValidInput();
             Tiles[row, col].Value = '0';
             return isValid;
         }

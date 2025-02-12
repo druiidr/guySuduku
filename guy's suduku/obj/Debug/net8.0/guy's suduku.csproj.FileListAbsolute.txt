@@ -28,3 +28,7 @@ C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\obj\Debug\net8.0\refin
 C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.pdb
 C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.genruntimeconfig.cache
 C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\obj\Debug\net8.0\ref\guy's suduku.dll
+C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\obj\Debug\net8.0\guy's suduku.csproj.AssemblyReference.cache
+C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\bin\Debug\net8.0\nunit.framework.dll
+C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\bin\Debug\net8.0\nunit.framework.legacy.dll
+C:\Users\ASUS\source\repos\druiidr\guySuduku\guy's suduku\obj\Debug\net8.0\guy's su.A78A6F7A.Up2Date

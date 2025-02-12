@@ -1,8 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "i2hf+9kVRD8=",
+  "dgSpecHash": "cI8yvrzif+w=",
   "success": true,
   "projectFilePath": "C:\\Users\\ASUS\\source\\repos\\druiidr\\guySuduku\\guy's suduku\\guy's suduku.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\ASUS\\.nuget\\packages\\nunit\\4.3.2\\nunit.4.3.2.nupkg.sha512"
+  ],
   "logs": []
 }
